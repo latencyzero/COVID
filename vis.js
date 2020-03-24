@@ -68,7 +68,7 @@ fetchPopulation(inURL)
 					{
 						var country = d["Country Name"].trim();
 						var pop = d["2019"].trim();
-						var od = { country: country, population: pop2019 };
+						var od = { country: country, population: pop };
 						return od;
 					});
 }
