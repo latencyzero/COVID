@@ -4,7 +4,7 @@
 	<title>COVID-19 Data</title>
 	
 	<link rel="stylesheet" href="main.css" type="text/css">
-    <link rel="stylesheet" href="nv.d3.min.css" type="text/css">
+    <link rel="stylesheet" href="nv.d3.css" type="text/css">
 	
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js" charset="utf-8"></script>
     <script src="nv.d3.js"></script>
@@ -12,12 +12,38 @@
 	<script src="https://d3js.org/d3-fetch.v1.js"></script>
 	<script src="vis.js"></script>
 
-	<script>
-		loadData();
+    <style>
+        text {
+            font: 12px sans-serif;
+        }
+        svg {
+            display: block;
+        }
+        html, body, #chart1, svg {
+            margin: 0px;
+            padding: 0px;
+            height: 100%;
+            width: 100%;
+        }
 
-	</script>
+        .dashed {
+            stroke-dasharray: 5,5;
+        }
+    </style>
 </head>
-<body>
-<h1>COVID-19 Data</h1>
+
+<body class="with-3d-shadow with-transitions">
+<h1>COVID-19</h1>
+
+<label for="regions">Regions:</label>
+<select id="regions" onchange="addRegion(this.options[this.selectedIndex].value)">
+	<option>-- Select Region to Add --</option>
+</select>
+
+<div id="chart1"><svg style='height:500px'> </svg></div>
+
+<script>
+	loadData();
+</script>
 </body>
 </html>

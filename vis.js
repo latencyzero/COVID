@@ -5,7 +5,7 @@ loadData()
 	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"));
 	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"));
 // 	promises.push(fetch("https://ghoapi.azureedge.net/api/DIMENSION/COUNTRY/DimensionValues").then((response) => { return response.json(); }));
-	promises.push(fetchPopulation("populations.csv"));
+	promises.push(fetchPopulation("https://latencyzero.github.io/COVID/populations.csv"));
 	
 	Promise.all(promises).then(
 		function()
@@ -14,14 +14,14 @@ loadData()
 			
 			var confirmed = arguments[0][0];
 			var deaths = arguments[0][1];
-			var regions = arguments[0][2]["value"];
-			var populations = arguments[0][3];
+// 			var regions = arguments[0][2]["value"];
+			var populations = arguments[0][2];
 			
 // 			console.log("Confirmed: " + arguments[0][0].length);
 // 			console.log("Deaths: " + arguments[0][1].length);
 // 			console.log("Recovered: " + arguments[0][2].length);
 
-			processData(confirmed, deaths, regions, populations)
+			processData(confirmed, deaths, populations)
 		},
 		function (err)
 		{
@@ -36,9 +36,6 @@ fetchCOVID(inURL)
 	return d3.csv(inURL,
 					function(d)
 					{
-						var state = d["Province/State"].trim();
-						if (state.length > 0)						//	Skip if the state is empty
-							return;
 						
 						//	Convert the count/day columns into an array. This
 						//	is very fragile, and depends right now on the
@@ -55,7 +52,11 @@ fetchCOVID(inURL)
 							});
 						
 						var country = d["Country/Region"].trim();
+						if (country == "US") country = "United States";		//	Fix up country names
+						
 						var od = { country: country, counts: counts };
+						var state = d["Province/State"].trim();
+						if (state) od["state"] = state;
 						return od;
 					});
 }
@@ -66,30 +67,120 @@ fetchPopulation(inURL)
 	return d3.csv(inURL,
 					function(d)
 					{
-						var country = d["Country Name"].trim();
-						var pop = d["2019"].trim();
-						var od = { country: country, population: pop };
+						var name = d["Country Name"].trim();
+						
+						//	Find the latest population year…
+						
+						var pop = 0;
+						var year = 0;
+						for (var i = 2020; i >= 1960; --i)
+						{
+							var s = d[i];
+							if (s)
+							{
+								pop = parseInt(s.trim());
+								year = i;
+								if (pop)
+								{
+									break;
+								}
+							}
+						}
+						var od = { name: name, population: pop, year: year };
 						return od;
 					});
 }
 
 function
-processData(inConfirmed, inDeaths, inCountries, inPopulations)
+processData(inConfirmed, inDeaths, inPopulations)
 {
-	console.log("Data: " + inConfirmed.length);
+	console.log("Confirmed: " + inConfirmed.length);
 	console.log(inConfirmed[0]);
-	console.log("Countries: " + inCountries.length);
-// 	console.log("Populations: " + inPopulations.length);
+// 	console.log("Countries: " + inCountries.length);
+	console.log("Populations: " + inPopulations.length);
 	
 	//	Build maps from region to stats…
 	
-	var regions = new Object();
-	
-	var regions = new Set()
+	var confirmed = new Map();
 	inConfirmed.forEach(
-		function(e)
-		{
-		}
-	);
+		e => {
+			confirmed.set(e.country, e.counts);
+		});
+	
+	var confirmedRegions = new Set(confirmed.keys());
+	
+	var deaths = new Map()
+	inDeaths.forEach(
+		e => {
+			deaths.set(e.country, e.counts);
+		});
+	
+	var regions = new Map();
+	inPopulations.sort((a, b) => {
+		return a.name.localeCompare(b.name)
+	});
+	inPopulations
+		.filter(e => confirmedRegions.has(e.name))							//	Only include those in COVID stats
+		.forEach(
+		e => {
+			regions.set(e.name, { name: e.name, population: e.population, year: e.year });
+		});
+		
+	gConfirmed = confirmed;
+	gDeaths = deaths;
+	gRegions = regions;
+	
+	//	Update the regions menu…
+	
+	let regionSel = document.getElementById("regions");
+	regions.forEach(
+		(v, k) => {
+			let opt = document.createElement("option");
+			opt.value = k;
+			opt.textContent = v.name;
+			regionSel.appendChild(opt);
+		});
+		
+	addRegion("United States");
 }
 
+function
+addRegion(inRegion)
+{
+	console.log(inRegion);
+	
+	nv.addGraph(
+		function()
+		{
+			var chart = nv.models.lineChart()
+						.options({
+							duration: 15,
+							useInteractiveGuideline: true
+						});
+			
+			chart.xAxis
+				.axisLabel("Date");
+			
+			chart.yAxis
+				.axisLabel("Cases");
+			
+			let confirmed = gConfirmed.get(inRegion);
+			
+			var data = [
+							{
+								values: confirmed.counts
+							}
+						];
+			
+			d3.select("#chart1").append("svg")
+				.datum(data)
+				.call(chart);
+				
+			return chart;
+		});
+}
+
+var gConfirmed;
+var gDeaths;
+var gRegions;
+var gSelectedRegions;
