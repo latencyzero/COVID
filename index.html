@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
 	<title>COVID-19 Data</title>
 	
 	<link rel="stylesheet" href="main.css" type="text/css">
     <link rel="stylesheet" href="nv.d3.css" type="text/css">
 	
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js" charset="utf-8"></script>
-    <script src="nv.d3.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js" charset="utf-8"></script>
 	<script src="https://d3js.org/d3-dsv.v1.js"></script>
-	<script src="https://d3js.org/d3-fetch.v1.js"></script>
+    <script src="nv.d3.js"></script>
+	<script src="d3-fetch.v1.js"></script>
 	<script src="vis.js"></script>
 
     <style>
@@ -19,15 +20,9 @@
         svg {
             display: block;
         }
-        html, body, #chart1, svg {
-            margin: 0px;
-            padding: 0px;
-            height: 100%;
-            width: 100%;
-        }
-
-        .dashed {
-            stroke-dasharray: 5,5;
+        body
+        {
+        	padding: 1em;
         }
     </style>
 </head>
@@ -40,7 +35,7 @@
 	<option>-- Select Region to Add --</option>
 </select>
 
-<div id="chart1"><svg style='height:500px'> </svg></div>
+<div id="chart1" style="width: 100%; height: 400px;"></div>
 
 <script>
 	loadData();

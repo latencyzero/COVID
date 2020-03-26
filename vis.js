@@ -48,7 +48,7 @@ fetchCOVID(inURL)
 						var counts = [];
 						keys.forEach(function(key)
 							{
-								counts.push(d[key]);
+								counts.push(parseInt(d[key]));
 							});
 						
 						var country = d["Country/Region"].trim();
@@ -144,6 +144,9 @@ processData(inConfirmed, inDeaths, inPopulations)
 	addRegion("United States");
 }
 
+var gChart;
+var data;
+
 function
 addRegion(inRegion)
 {
@@ -152,31 +155,72 @@ addRegion(inRegion)
 	nv.addGraph(
 		function()
 		{
-			var chart = nv.models.lineChart()
+			gChart = nv.models.linePlusBarChart()
 						.options({
 							duration: 15,
 							useInteractiveGuideline: true
 						});
+						
+			gChart.showLegend(true)
+					.focusEnable(false)
+					.margin({left: 80, right: 50})
+// 					.height(400);
 			
-			chart.xAxis
-				.axisLabel("Date");
+			gChart.xAxis
+				.axisLabel("Date")
+				.tickFormat(function(d) { return d3.time.format("%d-%b-%y")(new Date(d)); });
+			gChart.xScale(d3.time.scale());
 			
-			chart.yAxis
+			gChart.y1Axis
 				.axisLabel("Cases");
 			
+			gChart.y2Axis
+				.axisLabel("New Cases");
+			
+			gChart.bars.forceY([0]);
+			
 			let confirmed = gConfirmed.get(inRegion);
+			let deaths = gDeaths.get(inRegion);
+			
+			let newConfirmed = confirmed.map((e, idx) =>
+				{
+					var last = idx == 0 ? 0 : confirmed[idx - 1];
+					return e - last;
+				});
+				
+			let max = Math.max(...confirmed);
+			gChart
+// 				.yScale(d3.scale.log())
+				.yDomain([0, chartMax(max)]);
+			
+			let covidSeriesMap = (e, idx) =>
+			{
+				var d = new Date(2020, 0, 22);
+				d.setDate(d.getDate() + idx);
+				return { x: d, y: e };
+			}
 			
 			var data = [
 							{
-								values: confirmed.counts
+								key: "Confirmed", values: confirmed.map(covidSeriesMap), color: "#00ff00"
+							},
+							{
+								key: "New Confirmed", values: newConfirmed.map(covidSeriesMap), color: "#ccccff", bar: true
+							},
+							{
+								key: "Deaths", values: deaths.map(covidSeriesMap), color: "#ff0000"
 							}
 						];
+// 			var data = sinAndCos();
 			
 			d3.select("#chart1").append("svg")
 				.datum(data)
-				.call(chart);
-				
-			return chart;
+				.transition()
+				.duration(0)
+				.call(gChart);
+			
+			nv.utils.windowResize(function() { gChart.update() });
+			return gChart;
 		});
 }
 
@@ -184,3 +228,131 @@ var gConfirmed;
 var gDeaths;
 var gRegions;
 var gSelectedRegions;
+
+
+/**
+	Returns a maximum value somewhat larger than inMax.
+*/
+
+function
+chartMax(inMax)
+{
+	var inc;
+	if (inMax < 1000) inc = 100;
+	else if (inMax < 10000) inc = 1000;
+	else if (inMax < 100000) inc = 10000;
+	else if (inMax < 1000000) inc = 100000;
+	else inc = 1000000;
+	
+	return Math.ceil(inMax / inc) * inc;
+}
+
+//     var chart;
+//     var data;
+//     var legendPosition = "top";
+// 
+//     var randomizeFillOpacity = function() {
+//         var rand = Math.random(0,1);
+//         for (var i = 0; i < 100; i++) { // modify sine amplitude
+//             data[4].values[i].y = Math.sin(i/(5 + rand)) * .4 * rand - .25;
+//         }
+//         data[4].fillOpacity = rand;
+//         chart.update();
+//     };
+// 
+//     var toggleLegend = function() {
+//         if (legendPosition == "top") {
+//             legendPosition = "bottom";
+//         } else {
+//             legendPosition = "top";
+//         }
+//         chart.legendPosition(legendPosition);
+//         chart.update();
+//     };
+// 
+//     nv.addGraph(function() {
+//         chart = nv.models.lineChart()
+//             .options({
+//                 duration: 300,
+//                 useInteractiveGuideline: true
+//             })
+//         ;
+// 
+//         // chart sub-models (ie. xAxis, yAxis, etc) when accessed directly, return themselves, not the parent chart, so need to chain separately
+//         chart.xAxis
+//             .axisLabel("Time (s)")
+//             .tickFormat(d3.format(',.1f'))
+//             .staggerLabels(true)
+//         ;
+// 
+//         chart.yAxis
+//             .axisLabel('Voltage (v)')
+//             .tickFormat(function(d) {
+//                 if (d == null) {
+//                     return 'N/A';
+//                 }
+//                 return d3.format(',.2f')(d);
+//             })
+//         ;
+// 
+//         data = sinAndCos();
+// 
+//         d3.select('#chart1').append('svg')
+//             .datum(data)
+//             .call(chart);
+// 
+//         nv.utils.windowResize(chart.update);
+// 
+//         return chart;
+//     });
+
+    function sinAndCos() {
+        var sin = [],
+            sin2 = [],
+            cos = [],
+            rand = [],
+            rand2 = []
+            ;
+
+        for (var i = 0; i < 100; i++) {
+            sin.push({x: i, y: i % 10 == 5 ? null : Math.sin(i/10) }); //the nulls are to show how defined works
+            sin2.push({x: i, y: Math.sin(i/5) * 0.4 - 0.25});
+            cos.push({x: i, y: .5 * Math.cos(i/10)});
+            rand.push({x:i, y: Math.random() / 10});
+            rand2.push({x: i, y: Math.cos(i/10) + Math.random() / 10 })
+        }
+
+        return [
+            {
+                area: true,
+                values: sin,
+                key: "Sine Wave",
+                color: "#ff7f0e",
+                strokeWidth: 4,
+                classed: 'dashed'
+            },
+            {
+                values: cos,
+                key: "Cosine Wave",
+                color: "#2ca02c"
+            },
+            {
+                values: rand,
+                key: "Random Points",
+                color: "#2222ff"
+            },
+            {
+                values: rand2,
+                key: "Random Cosine",
+                color: "#667711",
+                strokeWidth: 3.5
+            },
+            {
+                area: true,
+                values: sin2,
+                key: "Fill opacity",
+                color: "#EF9CFB",
+                fillOpacity: .1
+            }
+        ];
+    }
