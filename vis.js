@@ -36,7 +36,6 @@ fetchCOVID(inURL)
 	return d3.csv(inURL,
 					function(d)
 					{
-						
 						//	Convert the count/day columns into an array. This
 						//	is very fragile, and depends right now on the
 						//	column headers (mm/dd/yy) to be sorted properly….
@@ -46,17 +45,22 @@ fetchCOVID(inURL)
 						var keys = Object.keys(d)
 						keys.splice(0, 4);
 						var counts = [];
-						keys.forEach(function(key)
-							{
-								counts.push(parseInt(d[key]));
-							});
+						keys.forEach(key => { counts.push(parseInt(d[key])); });
 						
 						var country = d["Country/Region"].trim();
 						if (country == "US") country = "United States";		//	Fix up country names
 						
 						var od = { country: country, counts: counts };
 						var state = d["Province/State"].trim();
-						if (state) od["state"] = state;
+						if (state)
+						{
+							od["state"] = state;
+							od["full"] = country + " - " + state;
+						}
+						else
+						{
+							od["full"] = country
+						}
 						return od;
 					});
 }
@@ -99,35 +103,51 @@ processData(inConfirmed, inDeaths, inPopulations)
 // 	console.log("Countries: " + inCountries.length);
 	console.log("Populations: " + inPopulations.length);
 	
+	//	Build regions list from confirmed cases…
+	
+	var regions =
+		inConfirmed.map(e =>
+		{
+			var region = { country: e.country, state: e.state, full: e.full }
+			return region
+		});
+	regions.sort((a, b) => { a.full.localeCompare(b.full) });
+	regions.forEach((r, idx) => { r["id"] = idx });
+	
 	//	Build maps from region to stats…
 	
 	var confirmed = new Map();
 	inConfirmed.forEach(
 		e => {
-			confirmed.set(e.country, e.counts);
+			confirmed.set(e.full, e.counts);
 		});
-	
-	var confirmedRegions = new Set(confirmed.keys());
 	
 	var deaths = new Map()
 	inDeaths.forEach(
 		e => {
-			deaths.set(e.country, e.counts);
+			deaths.set(e.full, e.counts);
 		});
 	
-	var regions = new Map();
-	inPopulations.sort((a, b) => {
-		return a.name.localeCompare(b.name)
-	});
-	inPopulations
-		.filter(e => confirmedRegions.has(e.name))							//	Only include those in COVID stats
-		.forEach(
-		e => {
-			regions.set(e.name, { name: e.name, population: e.population, year: e.year });
+	regions.forEach(r =>
+		{
+			let c = confirmed.get(r.full);
+			let d = deaths.get(r.full);
+			r.confirmed = c;
+			r.deaths = d;
 		});
+	
+// 	var confirmedRegions = new Set(confirmed.keys());
+// 	var regions = new Map();
+// 	inPopulations.sort((a, b) => {
+// 		return a.name.localeCompare(b.name)
+// 	});
+// 	inPopulations
+// 		.filter(e => confirmedRegions.has(e.name))							//	Only include those in COVID stats
+// 		.forEach(
+// 		e => {
+// 			regions.set(e.name, { name: e.name, population: e.population, year: e.year });
+// 		});
 		
-	gConfirmed = confirmed;
-	gDeaths = deaths;
 	gRegions = regions;
 	
 	//	Update the regions menu…
@@ -137,25 +157,35 @@ processData(inConfirmed, inDeaths, inPopulations)
 		(v, k) => {
 			let opt = document.createElement("option");
 			opt.value = k;
-			opt.textContent = v.name;
+			opt.textContent = v.full;
 			regionSel.appendChild(opt);
 		});
-		
-	addRegion("United States");
+	
+	createChart();
 }
 
 var gChart;
-var data;
+var gData = [];
 
 function
-addRegion(inRegion)
+getRegionByID(inID)
 {
-	console.log(inRegion);
-	
+	return gRegions[inID];
+}
+
+function
+getRegionByName(inName)
+{
+	return gRegions.find(r => r.full == inName);
+}
+
+function
+createChart()
+{
 	nv.addGraph(
 		function()
 		{
-			gChart = nv.models.linePlusBarChart()
+			gChart = nv.models.lineChart()
 						.options({
 							duration: 15,
 							useInteractiveGuideline: true
@@ -164,64 +194,126 @@ addRegion(inRegion)
 			gChart.showLegend(true)
 					.focusEnable(false)
 					.margin({left: 80, right: 50})
-// 					.height(400);
 			
 			gChart.xAxis
 				.axisLabel("Date")
 				.tickFormat(function(d) { return d3.time.format("%d-%b-%y")(new Date(d)); });
 			gChart.xScale(d3.time.scale());
 			
-			gChart.y1Axis
+			gChart.yAxis
 				.axisLabel("Cases");
 			
-			gChart.y2Axis
-				.axisLabel("New Cases");
-			
-			gChart.bars.forceY([0]);
-			
-			let confirmed = gConfirmed.get(inRegion);
-			let deaths = gDeaths.get(inRegion);
-			
-			let newConfirmed = confirmed.map((e, idx) =>
-				{
-					var last = idx == 0 ? 0 : confirmed[idx - 1];
-					return e - last;
-				});
-				
-			let max = Math.max(...confirmed);
-			gChart
-// 				.yScale(d3.scale.log())
-				.yDomain([0, chartMax(max)]);
-			
-			let covidSeriesMap = (e, idx) =>
-			{
-				var d = new Date(2020, 0, 22);
-				d.setDate(d.getDate() + idx);
-				return { x: d, y: e };
-			}
-			
-			var data = [
-							{
-								key: "Confirmed", values: confirmed.map(covidSeriesMap), color: "#00ff00"
-							},
-							{
-								key: "New Confirmed", values: newConfirmed.map(covidSeriesMap), color: "#ccccff", bar: true
-							},
-							{
-								key: "Deaths", values: deaths.map(covidSeriesMap), color: "#ff0000"
-							}
-						];
-// 			var data = sinAndCos();
-			
-			d3.select("#chart1").append("svg")
-				.datum(data)
-				.transition()
-				.duration(0)
-				.call(gChart);
-			
 			nv.utils.windowResize(function() { gChart.update() });
+	
+			d3.select("#chart1").append("svg")
+				.datum(gData)
+				.transition()
+				.duration(1000)
+				.call(gChart);
+
+			let region = getRegionByName("United States")
+			addRegion(region);
+			
 			return gChart;
 		});
+}
+
+function
+addRegionByID(inRegionID)
+{
+	let region = getRegionByID(inRegionID)
+	addRegion(region)
+}
+
+function
+addRegion(inRegion)
+{
+	console.log(inRegion);
+	addRegionTag(inRegion.id, 1);
+	
+	let confirmed = inRegion.confirmed;
+	let deaths = inRegion.deaths;
+	
+	//	Compute and cache new cases…
+	
+	var newConfirmed = inRegion["newConfirmed"]
+	if (!newConfirmed)
+	{
+		newConfirmed = confirmed.map((e, idx) =>
+			{
+				var last = idx == 0 ? 0 : confirmed[idx - 1];
+				return e - last;
+			});
+		inRegion["newConfirmed"] = newConfirmed
+	}
+	
+	//	Get the max value…
+	
+	let max = Math.max(...confirmed);
+// 			gChart
+// // 				.yScale(d3.scale.log())
+// 				.yDomain([0, chartMax(max)]);
+	
+	//	Set 
+	let covidSeriesMap = (e, idx) =>
+	{
+		var d = new Date(2020, 0, 22);
+		d.setDate(d.getDate() + idx);
+		return { x: d, y: e };
+	}
+	
+	gData.push({
+						key: inRegion.full + " Confirmed", values: confirmed.map(covidSeriesMap), color: "#00ff00"
+					});
+// 					,
+// 					{
+// 						key: inRegion.full + " Deaths", values: deaths.map(covidSeriesMap), color: "#ff0000"
+// 					}
+// 				];
+
+			
+}
+
+function
+addSeriesToChart(inChart)
+{
+}
+
+function
+removeRegion(inRegionID, inChartID)
+{
+	removeRegionTag(inRegionID, inChartID)
+}
+
+/**
+	Adds a tag to the specified chart to give the user a way to remove regions.
+*/
+
+function
+addRegionTag(inRegionID, inChartID)
+{
+	let region = getRegionByID(inRegionID)
+	d3.select("#tags" + inChartID)
+		.append("span")
+			.attr("class", "region")
+			.attr("id", "region" + inRegionID)
+			.text(region.full)
+			.append("a")
+				.attr("class", "remove")
+				.attr("onclick", "removeRegion(" + inRegionID + ", " + inChartID + ");")
+				.text("×")
+}
+
+/**
+	Remove the specified region tag from the specified chart.
+*/
+
+function
+removeRegionTag(inRegionID, inChartID)
+{
+	d3.select("#tags" + inChartID)
+		.select("#region" + inRegionID)
+			.remove()
 }
 
 var gConfirmed;
