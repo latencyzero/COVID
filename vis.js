@@ -182,40 +182,23 @@ getRegionByName(inName)
 function
 createChart()
 {
-	nv.addGraph(
-		function()
-		{
-			gChart = nv.models.lineChart()
-						.options({
-							duration: 15,
-							useInteractiveGuideline: true
-						});
-						
-			gChart.showLegend(true)
-					.focusEnable(false)
-					.margin({left: 80, right: 50})
-			
-			gChart.xAxis
-				.axisLabel("Date")
-				.tickFormat(function(d) { return d3.time.format("%d-%b-%y")(new Date(d)); });
-			gChart.xScale(d3.time.scale());
-			
-			gChart.yAxis
-				.axisLabel("Cases");
-			
-			nv.utils.windowResize(function() { gChart.update() });
+	let region = getRegionByName("United States")
+	let dates = ["x"].concat(region.confirmed.map((c, idx) => idx));
+	let counts = [region.full].concat(region.confirmed);
 	
-			d3.select("#chart1").append("svg")
-				.datum(gData)
-				.transition()
-				.duration(1000)
-				.call(gChart);
-
-			let region = getRegionByName("United States")
-			addRegion(region);
-			
-			return gChart;
-		});
+	gChart = c3.generate({
+		bindto: "#chart1",
+		data:
+		{
+			x: "x",
+			columns: [dates, counts]
+		},
+		axis:
+		{
+			x: { label: { text: "Day", position: "outer-middle" } },
+			y: { label: { text: "Cases", position: "outer-middle" } }
+		}
+	});
 }
 
 function
@@ -262,6 +245,15 @@ addRegion(inRegion)
 		return { x: d, y: e };
 	}
 	
+	setTimeout(function()
+	{
+		gChart.load({
+			columns: [
+				[inRegion.full].concat(inRegion.confirmed)
+			]
+		});
+	}, 10);
+
 	gData.push({
 						key: inRegion.full + " Confirmed", values: confirmed.map(covidSeriesMap), color: "#00ff00"
 					});
@@ -283,6 +275,11 @@ function
 removeRegion(inRegionID, inChartID)
 {
 	removeRegionTag(inRegionID, inChartID)
+	
+	let region = getRegionByID(inRegionID)
+	gChart.unload({
+		ids: [region.full]
+	});
 }
 
 /**
