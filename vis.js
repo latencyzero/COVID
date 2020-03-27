@@ -183,9 +183,9 @@ function
 createChart()
 {
 	let region = getRegionByName("United States")
+	
 	let dates = ["x"].concat(region.confirmed.map((c, idx) => idx));
 	let counts = [region.full].concat(region.confirmed);
-	
 	gChart = c3.generate({
 		bindto: "#chart1",
 		data:
@@ -199,6 +199,8 @@ createChart()
 			y: { label: { text: "Cases", position: "outer-middle" } }
 		}
 	});
+	
+	addRegionTag(region.id, 1);
 }
 
 function
