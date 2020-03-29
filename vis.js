@@ -116,7 +116,6 @@ processData(inConfirmed, inDeaths, inPopulations)
 			return region
 		});
 	regions.sort((a, b) => { a.full.localeCompare(b.full) });
-	regions.forEach((r, idx) => { r["id"] = idx });
 	
 	//	Build maps from region to stats…
 	
@@ -142,18 +141,54 @@ processData(inConfirmed, inDeaths, inPopulations)
 			r.latestDeaths = Math.max(...d);
 		});
 	
-// 	var confirmedRegions = new Set(confirmed.keys());
-// 	var regions = new Map();
-// 	inPopulations.sort((a, b) => {
-// 		return a.name.localeCompare(b.name)
-// 	});
-// 	inPopulations
-// 		.filter(e => confirmedRegions.has(e.name))							//	Only include those in COVID stats
-// 		.forEach(
-// 		e => {
-// 			regions.set(e.name, { name: e.name, population: e.population, year: e.year });
-// 		});
-		
+	//	Totals for regions with sub regions…
+	
+	let totalsRegions = {}
+	let curTotal = null
+	regions.forEach(r =>
+	{
+		if (r.state)
+		{
+			curTotal = totalsRegions[r.country]
+			if (!curTotal)
+			{
+				curTotal = JSON.parse(JSON.stringify(r))		//	Deep-copy the region
+				curTotal.state = null
+				curTotal.full = curTotal.country
+				totalsRegions[curTotal.country] = curTotal
+			}
+			else
+			{
+				curTotal.confirmed.forEach((s, i) => { curTotal.confirmed[i] += r.confirmed[i] })
+				curTotal.deaths.forEach((s, i) => { curTotal.deaths[i] += r.deaths[i] })
+				//	If the country matches, then sum the values…
+				
+				if (r.country == curTotal.country)
+				{
+				}
+				else	//	We’re done with this country, start over
+				{
+					
+					totalsRegions.push(curTotal)
+					curTotal = null
+				}
+			}
+		}
+	})
+	
+	//	Get maximums…
+	
+	let tr = Object.values(totalsRegions)
+	tr.forEach(r =>
+	{
+		r.latestConfirmed = Math.max(...r.confirmed);
+		r.latestDeaths = Math.max(...r.deaths);
+	})
+	
+	regions = tr.concat(regions)
+	regions.sort((a, b) => a.full.localeCompare(b.full) );
+	regions.forEach((r, idx) => { r["id"] = idx });
+	
 	gRegions = regions;
 	
 	//	Update the regions menu…
@@ -171,7 +206,6 @@ processData(inConfirmed, inDeaths, inPopulations)
 }
 
 var gChart;
-var gData = [];
 
 function
 getRegionByID(inID)
@@ -210,7 +244,7 @@ createChart()
 		{
 			x: { label: { text: "Day", position: "outer-middle" } },
 			y: { label: { text: "Cases", position: "outer-middle" } },
-			y2: { show: true }
+			y2: { show: false }
 		}
 	}
 	gChart = c3.generate(opts);
@@ -266,21 +300,11 @@ addRegion(inRegion)
 	{
 		gChart.load({
 			columns: [
-				[inRegion.full].concat(inRegion.confirmed)
+				["c" + inRegion.id].concat(inRegion.confirmed)
 			]
 		});
 	}, 10);
 
-	gData.push({
-						key: inRegion.full + " Confirmed", values: confirmed.map(covidSeriesMap), color: "#00ff00"
-					});
-// 					,
-// 					{
-// 						key: inRegion.full + " Deaths", values: deaths.map(covidSeriesMap), color: "#ff0000"
-// 					}
-// 				];
-
-			
 }
 
 function
@@ -295,7 +319,7 @@ removeRegion(inRegionID, inChartID)
 	
 	let region = getRegionByID(inRegionID)
 	gChart.unload({
-		ids: [region.full]
+		ids: ["c" + region.id, "d" + region.id]
 	});
 }
 
