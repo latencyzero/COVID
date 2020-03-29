@@ -95,6 +95,10 @@ fetchPopulation(inURL)
 					});
 }
 
+/**
+	Post-process the data into structures suitable for our use.
+*/
+
 function
 processData(inConfirmed, inDeaths, inPopulations)
 {
@@ -134,6 +138,8 @@ processData(inConfirmed, inDeaths, inPopulations)
 			let d = deaths.get(r.full);
 			r.confirmed = c;
 			r.deaths = d;
+			r.latestConfirmed = Math.max(...c);
+			r.latestDeaths = Math.max(...d);
 		});
 	
 // 	var confirmedRegions = new Set(confirmed.keys());
@@ -157,7 +163,7 @@ processData(inConfirmed, inDeaths, inPopulations)
 		(v, k) => {
 			let opt = document.createElement("option");
 			opt.value = k;
-			opt.textContent = v.full;
+			opt.textContent = v.full + " (" + v.latestConfirmed + "/" + v.latestDeaths + ")";
 			regionSel.appendChild(opt);
 		});
 	
@@ -185,20 +191,29 @@ createChart()
 	let region = getRegionByName("United States")
 	
 	let dates = ["x"].concat(region.confirmed.map((c, idx) => idx));
-	let counts = [region.full].concat(region.confirmed);
-	gChart = c3.generate({
+	
+	let confirmedLabel = "c" + region.id
+	let deathsLabel = "d" + region.id
+	let confirmed = [confirmedLabel].concat(region.confirmed);
+	let deaths = [deathsLabel].concat(region.deaths);
+	let opts = {
 		bindto: "#chart1",
 		data:
 		{
 			x: "x",
-			columns: [dates, counts]
+			columns: [dates, confirmed, deaths],
+			axes: { [confirmedLabel] : "y", [deathsLabel] : "y" },
+			names: { [confirmedLabel] : region.full + " (cases)", [deathsLabel] : region.full + " (deaths)" }
+			
 		},
 		axis:
 		{
 			x: { label: { text: "Day", position: "outer-middle" } },
-			y: { label: { text: "Cases", position: "outer-middle" } }
+			y: { label: { text: "Cases", position: "outer-middle" } },
+			y2: { show: true }
 		}
-	});
+	}
+	gChart = c3.generate(opts);
 	
 	addRegionTag(region.id, 1);
 }
@@ -296,7 +311,7 @@ addRegionTag(inRegionID, inChartID)
 		.append("span")
 			.attr("class", "region")
 			.attr("id", "region" + inRegionID)
-			.text(region.full)
+			.text(region.full + " (" + region.latestConfirmed + ", " + region.latestDeaths + ")")
 			.append("a")
 				.attr("class", "remove")
 				.attr("onclick", "removeRegion(" + inRegionID + ", " + inChartID + ");")
