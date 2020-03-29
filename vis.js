@@ -235,8 +235,7 @@ createChart()
 		data:
 		{
 			x: "x",
-			columns: [dates, confirmed, deaths],
-			axes: { [confirmedLabel] : "y", [deathsLabel] : "y" },
+			columns: [],
 			names: { [confirmedLabel] : region.full + " (cases)", [deathsLabel] : region.full + " (deaths)" }
 			
 		},
@@ -249,7 +248,8 @@ createChart()
 	}
 	gChart = c3.generate(opts);
 	
-	addRegionTag(region.id, 1);
+	addRegion(region)
+// 	addRegionTag(region.id, 1);
 }
 
 function
@@ -298,10 +298,14 @@ addRegion(inRegion)
 	
 	setTimeout(function()
 	{
+		let dates = ["x"].concat(inRegion.confirmed.map((c, idx) => idx));
 		gChart.load({
+			x: "x",
 			columns: [
+				dates,
 				["c" + inRegion.id].concat(inRegion.confirmed)
-			]
+			],
+			names: { ["c" + inRegion.id] : inRegion.full + " (cases)", ["d" + inRegion.id] : inRegion.full + " (deaths)" }
 		});
 	}, 10);
 
