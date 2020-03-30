@@ -230,6 +230,7 @@ createChart()
 	let deathsLabel = "d" + region.id
 	let confirmed = [confirmedLabel].concat(region.confirmed);
 	let deaths = [deathsLabel].concat(region.deaths);
+	let lastDate = new Date(); lastDate.setDate(lastDate.getDate() - 1)
 	let opts = {
 		bindto: "#chart1",
 		data:
@@ -241,7 +242,12 @@ createChart()
 		},
 		axis:
 		{
-			x: { label: { text: "Day", position: "outer-middle" }, type: "timeseries", tick: { format: "%m-%d" } },
+			x:
+			{
+				label: { text: "Day", position: "outer-middle" },
+				type: "timeseries",
+				tick: { format: "%b-%d", values: [ new Date(2020, 0, 22), new Date(2020, 1, 1), new Date(2020, 1, 15), new Date(2020, 2, 1), new Date(2020, 2, 15), new Date(2020, 3, 1), new Date(2020, 3, 15), new Date(2020, 4, 1), new Date(2020, 4, 15), new Date(2020, 5, 1), new Date(2020, 5, 15), lastDate ] }
+			},
 			y: { label: { text: "Cases", position: "outer-middle" } },
 			y2: { show: false }
 		}
