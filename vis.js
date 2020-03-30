@@ -241,7 +241,7 @@ createChart()
 		},
 		axis:
 		{
-			x: { label: { text: "Day", position: "outer-middle" } },
+			x: { label: { text: "Day", position: "outer-middle" }, type: "timeseries", tick: { format: "%m-%d" } },
 			y: { label: { text: "Cases", position: "outer-middle" } },
 			y2: { show: false }
 		}
@@ -289,16 +289,16 @@ addRegion(inRegion)
 // 				.yDomain([0, chartMax(max)]);
 	
 	//	Set 
-	let covidSeriesMap = (e, idx) =>
+	let regionDates = inRegion.confirmed.map((e, idx) =>
 	{
 		var d = new Date(2020, 0, 22);
 		d.setDate(d.getDate() + idx);
-		return { x: d, y: e };
-	}
+		return d;
+	})
 	
 	setTimeout(function()
 	{
-		let dates = ["x"].concat(inRegion.confirmed.map((c, idx) => idx));
+		let dates = ["x"].concat(regionDates);
 		gChart.load({
 			x: "x",
 			columns: [
