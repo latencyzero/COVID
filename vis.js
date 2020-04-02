@@ -247,6 +247,7 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	gChartCases = createChart("cases")
 	gChartDailyCases = createChart("dailyCases")
+	gChartDeaths = createChart("deaths")
 	addRegionsByFilterID(1)
 }
 
@@ -281,6 +282,7 @@ computeDailyCases(ioRegion)
 
 var gChartCases;
 var gChartDailyCases;
+var gChartDeaths;
 
 function
 getRegionByID(inID)
@@ -373,7 +375,6 @@ addRegion(inRegion)
 		names:
 		{
 			["c" + inRegion.id] : inRegion.full + "",
-			["d" + inRegion.id] : inRegion.full + " (deaths)"
 		}
 	});
 	
@@ -388,6 +389,20 @@ addRegion(inRegion)
 		names:
 		{
 			["dc" + inRegion.id] : inRegion.full + "",
+		}
+	});
+	
+	gChartDeaths.load({
+		x: "x",
+		columns:
+		[
+			dates,
+			["d" + inRegion.id].concat(inRegion.deaths)
+		],
+		type: "line",
+		names:
+		{
+			["d" + inRegion.id] : inRegion.full + "",
 		}
 	});
 	
@@ -420,7 +435,10 @@ removeRegion(inRegionID, inChartID)
 		ids: ["c" + region.id, "d" + region.id, "dc" + region.id]
 	});
 	gChartDailyCases.unload({
-		ids: ["c" + region.id, "d" + region.id, "dc" + region.id]
+		ids: ["dc" + region.id]
+	});
+	gChartDeaths.unload({
+		ids: ["d" + region.id]
 	});
 	
 	gSelectedRegions.delete(inRegionID)
