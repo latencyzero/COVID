@@ -223,12 +223,22 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	let filters = []
 	filters.push({
-		name: "Top 10 Countries",
+		name: "Top 10 Countries by Cases",
 		id: 1,
 		filter: function(inRegions)
 		{
 			let results = inRegions.filter(f => !f.state)
 			results = results.sort((a, b) => b.latestConfirmed - a.latestConfirmed).slice(0, 10)
+			return results
+		}
+	});
+	filters.push({
+		name: "Top 10 Countries by Deaths",
+		id: 1,
+		filter: function(inRegions)
+		{
+			let results = inRegions.filter(f => !f.state)
+			results = results.sort((a, b) => b.latestDeaths - a.latestDeaths).slice(0, 10)
 			return results
 		}
 	});
@@ -426,13 +436,24 @@ addSeriesToChart(inChart)
 }
 
 function
+removeAllRegions()
+{
+	gChartCases.unload()
+	gChartDailyCases.unload()
+	gChartDeaths.unload()
+	gSelectedRegions.clear()
+	
+	removeAllRegionTags()
+}
+
+function
 removeRegion(inRegionID, inChartID)
 {
 	removeRegionTag(inRegionID, inChartID)
 	
 	let region = getRegionByID(inRegionID)
 	gChartCases.unload({
-		ids: ["c" + region.id, "d" + region.id, "dc" + region.id]
+		ids: ["c" + region.id]
 	});
 	gChartDailyCases.unload({
 		ids: ["dc" + region.id]
@@ -472,6 +493,14 @@ removeRegionTag(inRegionID, inChartID)
 {
 	d3.select("#tags" + inChartID)
 		.select("#region" + inRegionID)
+			.remove()
+}
+
+function
+removeAllRegionTags()
+{
+	d3.select("#tags1")
+		.selectAll("*")
 			.remove()
 }
 
