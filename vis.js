@@ -186,7 +186,24 @@ processData(inConfirmed, inDeaths, inPopulations)
 	})
 	
 	regions = tr.concat(regions)
-	regions.sort((a, b) => a.full.localeCompare(b.full) );
+	
+	//	Group regions…
+	
+	regions.forEach(r => r.sequence = 999)
+	
+	//	Sort the regions…
+	
+	regions.sort((a, b) =>
+	{
+		if (a.sequence == b.sequence)
+		{
+			return a.full.localeCompare(b.full)
+		}
+		else
+		{
+			return Math.sign(b.sequence - a.sequence)
+		}
+	});
 	regions.forEach((r, idx) => { r["id"] = idx });
 	
 	gRegions = regions;
@@ -195,12 +212,38 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	let regionSel = document.getElementById("regions");
 	regions.forEach(
-		(v, k) => {
+		(r, k) => {
 			let opt = document.createElement("option");
-			opt.value = k;
-			opt.textContent = v.full + " (" + v.latestConfirmed + "/" + v.latestDeaths + ")";
+			opt.value = r.id;
+			opt.textContent = r.full + " (" + r.latestConfirmed + "/" + r.latestDeaths + ")";
 			regionSel.appendChild(opt);
 		});
+	
+	//	Populate filters…
+	
+	let filters = []
+	filters.push({
+		name: "Top 10 Countries",
+		id: 1,
+		filter: function(inRegions)
+		{
+			let results = inRegions.filter(f => !f.state)
+			results = results.sort((a, b) => b.latestConfirmed - a.latestConfirmed).slice(0, 10)
+			return results
+		}
+	});
+	gFilters = filters
+	
+	let filtersSel = document.getElementById("filters");
+	filters.forEach(
+		(f) => {
+			let opt = document.createElement("option");
+			opt.value = f.id;
+			opt.textContent = f.name;
+			filtersSel.appendChild(opt);
+		});
+	
+	//	Create the main chart…
 	
 	createChart();
 }
@@ -246,11 +289,12 @@ createChart()
 			{
 				label: { text: "Day", position: "outer-middle" },
 				type: "timeseries",
-				tick: { format: "%b-%d", values: [ new Date(2020, 0, 22), new Date(2020, 1, 1), new Date(2020, 1, 15), new Date(2020, 2, 1), new Date(2020, 2, 15), new Date(2020, 3, 1), new Date(2020, 3, 15), new Date(2020, 4, 1), new Date(2020, 4, 15), new Date(2020, 5, 1), new Date(2020, 5, 15), lastDate ] }
+				tick: { format: "%b-%d", values: [ new Date(2020, 0, 22), new Date(2020, 1, 1), new Date(2020, 1, 15), new Date(2020, 2, 1), new Date(2020, 2, 15), new Date(2020, 3, 1), new Date(2020, 3, 15), new Date(2020, 4, 1), new Date(2020, 4, 15), new Date(2020, 5, 1), new Date(2020, 5, 15) ] }
 			},
 			y: { label: { text: "Cases", position: "outer-middle" } },
 			y2: { show: false }
-		}
+		},
+		tooltip: { grouped: false }
 	}
 	gChart = c3.generate(opts);
 	
@@ -261,13 +305,22 @@ createChart()
 function
 addRegionByID(inRegionID)
 {
-	let region = getRegionByID(inRegionID)
-	addRegion(region)
+	setTimeout(function()
+	{
+		let region = getRegionByID(inRegionID)
+		addRegion(region)
+	}, 10);
 }
 
 function
 addRegion(inRegion)
 {
+	if (gSelectedRegions.has(inRegion.id))
+	{
+		console.log("Skipping " + inRegion.country + ", already selected")
+		return;
+	}
+	
 	console.log(inRegion);
 	addRegionTag(inRegion.id, 1);
 	
@@ -302,8 +355,8 @@ addRegion(inRegion)
 		return d;
 	})
 	
-	setTimeout(function()
-	{
+// 	set Timeout(function()
+// 	{
 		let dates = ["x"].concat(regionDates);
 		gChart.load({
 			x: "x",
@@ -311,10 +364,22 @@ addRegion(inRegion)
 				dates,
 				["c" + inRegion.id].concat(inRegion.confirmed)
 			],
-			names: { ["c" + inRegion.id] : inRegion.full + " (cases)", ["d" + inRegion.id] : inRegion.full + " (deaths)" }
+			names: { ["c" + inRegion.id] : inRegion.full + "", ["d" + inRegion.id] : inRegion.full + " (deaths)" }
 		});
-	}, 10);
+// 	}, 10);
 
+	gSelectedRegions.add(inRegion.id)
+}
+
+function
+addRegionsByFilterID(inFilterID)
+{
+	setTimeout(function()
+	{
+		let filter = gFilters.find(f => f.id == inFilterID)
+		let regions = filter.filter(gRegions)
+		regions.forEach(r => addRegion(r))
+	}, 10);
 }
 
 function
@@ -331,6 +396,8 @@ removeRegion(inRegionID, inChartID)
 	gChart.unload({
 		ids: ["c" + region.id, "d" + region.id]
 	});
+	
+	gRegions.delete(inRegionID)
 }
 
 /**
@@ -367,7 +434,8 @@ removeRegionTag(inRegionID, inChartID)
 var gConfirmed;
 var gDeaths;
 var gRegions;
-var gSelectedRegions;
+var gFilters;
+var gSelectedRegions = new Set();
 
 
 /**
