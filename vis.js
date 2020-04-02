@@ -245,11 +245,42 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	//	Create the main chart…
 	
-	createChart()
+	gChartCases = createChart("cases")
+	gChartDailyCases = createChart("dailyCases")
 	addRegionsByFilterID(1)
 }
 
-var gChart;
+/**
+	Computes the new cases for the specified region if needed.
+*/
+
+function
+computeDailyCases(ioRegion)
+{
+	if (ioRegion.dailyConfirmed && ioRegion.dailyDeaths)
+	{
+		return
+	}
+	
+	let dailyCases = []
+	let dailyDeaths = []
+	let lastCases = 0
+	let lastDeaths = 0
+	ioRegion.confirmed.forEach((c, i) =>
+	{
+		dailyCases.push(ioRegion.confirmed[i] - lastCases)
+		dailyDeaths.push(ioRegion.deaths[i] - lastDeaths)
+		
+		lastCases = ioRegion.confirmed[i]
+		lastDeaths = ioRegion.deaths[i]
+	})
+	
+	ioRegion.dailyConfirmed = dailyCases
+	ioRegion.dailyDeaths = dailyDeaths
+}
+
+var gChartCases;
+var gChartDailyCases;
 
 function
 getRegionByID(inID)
@@ -264,10 +295,10 @@ getRegionByName(inName)
 }
 
 function
-createChart()
+createChart(inElementID)
 {
 	let opts = {
-		bindto: "#chart1",
+		bindto: "#" + inElementID,
 		data:
 		{
 			x: "x",
@@ -287,7 +318,7 @@ createChart()
 		},
 		tooltip: { grouped: false }
 	}
-	gChart = c3.generate(opts);
+	return c3.generate(opts);
 }
 
 function
@@ -315,27 +346,14 @@ addRegion(inRegion)
 	let confirmed = inRegion.confirmed;
 	let deaths = inRegion.deaths;
 	
-	//	Compute and cache new cases…
-	
-	var newConfirmed = inRegion["newConfirmed"]
-	if (!newConfirmed)
-	{
-		newConfirmed = confirmed.map((e, idx) =>
-			{
-				var last = idx == 0 ? 0 : confirmed[idx - 1];
-				return e - last;
-			});
-		inRegion["newConfirmed"] = newConfirmed
-	}
+	computeDailyCases(inRegion)
 	
 	//	Get the max value…
 	
 	let max = Math.max(...confirmed);
-// 			gChart
-// // 				.yScale(d3.scale.log())
-// 				.yDomain([0, chartMax(max)]);
 	
-	//	Set 
+	//	Set dates…
+	
 	let regionDates = inRegion.confirmed.map((e, idx) =>
 	{
 		var d = new Date(2020, 0, 22);
@@ -343,19 +361,36 @@ addRegion(inRegion)
 		return d;
 	})
 	
-// 	set Timeout(function()
-// 	{
-		let dates = ["x"].concat(regionDates);
-		gChart.load({
-			x: "x",
-			columns: [
-				dates,
-				["c" + inRegion.id].concat(inRegion.confirmed)
-			],
-			names: { ["c" + inRegion.id] : inRegion.full + "", ["d" + inRegion.id] : inRegion.full + " (deaths)" }
-		});
-// 	}, 10);
-
+	let dates = ["x"].concat(regionDates);
+	gChartCases.load({
+		x: "x",
+		columns:
+		[
+			dates,
+			["c" + inRegion.id].concat(inRegion.confirmed),
+		],
+		type: "line",
+		names:
+		{
+			["c" + inRegion.id] : inRegion.full + "",
+			["d" + inRegion.id] : inRegion.full + " (deaths)"
+		}
+	});
+	
+	gChartDailyCases.load({
+		x: "x",
+		columns:
+		[
+			dates,
+			["dc" + inRegion.id].concat(inRegion.dailyConfirmed)
+		],
+		type: "line",
+		names:
+		{
+			["dc" + inRegion.id] : inRegion.full + "",
+		}
+	});
+	
 	gSelectedRegions.add(inRegion.id)
 }
 
@@ -381,11 +416,14 @@ removeRegion(inRegionID, inChartID)
 	removeRegionTag(inRegionID, inChartID)
 	
 	let region = getRegionByID(inRegionID)
-	gChart.unload({
-		ids: ["c" + region.id, "d" + region.id]
+	gChartCases.unload({
+		ids: ["c" + region.id, "d" + region.id, "dc" + region.id]
+	});
+	gChartDailyCases.unload({
+		ids: ["c" + region.id, "d" + region.id, "dc" + region.id]
 	});
 	
-	gRegions.delete(inRegionID)
+	gSelectedRegions.delete(inRegionID)
 }
 
 /**

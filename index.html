@@ -45,11 +45,14 @@
 		
 		.footer
 		{
+/* 
 			position: fixed;
 			bottom: 0;
+ */
 			color: gray;
 			font-size: smaller;
 			padding-bottom: 1em;
+			margin-top: 5em;
 		}
 		
 		.footer p img
@@ -60,6 +63,13 @@
 		.footer p
 		{
 			margin: 0.2em;
+		}
+		
+		div#tags1
+		{
+			margin-top: 2em;
+			margin-left: 4em;
+			font-size: smaller;
 		}
 	</style>
 </head>
@@ -79,16 +89,22 @@
 
 <h2>Confirmed Cases</h2>
 
-<div id="chart1" style="width: 100%; height: 400px; margin-top: 2em;"></div>
-<div id="tags1"></span></div>
+<div id="cases" style="width: 100%; height: 400px; margin-top: 2em;"></div>
 
-<div id="chart2" style="width: 100%; height: 400px;"></div>
-<div id="tags2"></span></div>
+<h2>Daily Cases</h2>
+
+<div id="dailyCases" style="width: 100%; height: 400px;"></div>
+
+<div id="tags1"></div>
 
 <div class="footer">
 	<p>This pure-javascript page loads data from the Johns Hopkins Github <a href="https://github.com/CSSEGISandData/COVID-19" target="_blank">repo</a>,
 	and should be up-to-date with the previous day’s reported figures. <a href="https://github.com/latencyzero/COVID" target="_blank">Source code</a>.</p>
-	<p><a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank"><img alt="Creative Commons License" style="border-width:0; margin-right: 0.5em;" src="https://i.creativecommons.org/l/by-nc/4.0/80x15.png" /></a><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">COVID-19 Charts</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://latencyzero.github.io/COVID/" property="cc:attributionName" rel="cc:attributionURL" target="_blank">Latency: Zero, LLC</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">Creative Commons Attribution-NonCommercial 4.0 International License</a>.</p>
+	<p>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank"><img alt="Creative Commons License" style="border-width:0; margin-right: 0.5em;" src="https://i.creativecommons.org/l/by-nc/4.0/80x15.png"></a>
+		<span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">COVID-19 Charts</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://latencyzero.github.io/COVID/" property="cc:attributionName" rel="cc:attributionURL" target="_blank">Latency: Zero, LLC</a>
+		is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
+	</p>
 </div>
 <script>
 	loadData();
