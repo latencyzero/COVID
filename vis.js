@@ -10,7 +10,7 @@ loadData()
 	Promise.all(promises).then(
 		function()
 		{
-			console.log("Data fetched");
+// 			console.log("Data fetched");
 			
 			var confirmed = arguments[0][0];
 			var deaths = arguments[0][1];
@@ -102,10 +102,10 @@ fetchPopulation(inURL)
 function
 processData(inConfirmed, inDeaths, inPopulations)
 {
-	console.log("Confirmed: " + inConfirmed.length);
-	console.log(inConfirmed[0]);
+// 	console.log("Confirmed: " + inConfirmed.length);
+// 	console.log(inConfirmed[0]);
 // 	console.log("Countries: " + inCountries.length);
-	console.log("Populations: " + inPopulations.length);
+// 	console.log("Populations: " + inPopulations.length);
 	
 	//	Build regions list from confirmed cases…
 	
@@ -245,7 +245,8 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	//	Create the main chart…
 	
-	createChart();
+	createChart()
+	addRegionsByFilterID(1)
 }
 
 var gChart;
@@ -265,22 +266,12 @@ getRegionByName(inName)
 function
 createChart()
 {
-	let region = getRegionByName("United States")
-	
-	let dates = ["x"].concat(region.confirmed.map((c, idx) => idx));
-	
-	let confirmedLabel = "c" + region.id
-	let deathsLabel = "d" + region.id
-	let confirmed = [confirmedLabel].concat(region.confirmed);
-	let deaths = [deathsLabel].concat(region.deaths);
-	let lastDate = new Date(); lastDate.setDate(lastDate.getDate() - 1)
 	let opts = {
 		bindto: "#chart1",
 		data:
 		{
 			x: "x",
 			columns: [],
-			names: { [confirmedLabel] : region.full + " (cases)", [deathsLabel] : region.full + " (deaths)" }
 			
 		},
 		axis:
@@ -297,9 +288,6 @@ createChart()
 		tooltip: { grouped: false }
 	}
 	gChart = c3.generate(opts);
-	
-	addRegion(region)
-// 	addRegionTag(region.id, 1);
 }
 
 function
@@ -317,11 +305,11 @@ addRegion(inRegion)
 {
 	if (gSelectedRegions.has(inRegion.id))
 	{
-		console.log("Skipping " + inRegion.country + ", already selected")
+// 		console.log("Skipping " + inRegion.country + ", already selected")
 		return;
 	}
 	
-	console.log(inRegion);
+// 	console.log(inRegion);
 	addRegionTag(inRegion.id, 1);
 	
 	let confirmed = inRegion.confirmed;
