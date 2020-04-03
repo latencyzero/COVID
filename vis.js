@@ -390,7 +390,7 @@ createChart(inElementID, inYAxisLabel, inYFormat)
 		{
 			x: "x",
 			columns: [],
-			
+			empty: { label : { text: "Loading…" } },
 		},
 		axis:
 		{
