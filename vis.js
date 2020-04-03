@@ -1,27 +1,29 @@
 function
 loadData()
 {
-	var promises = [];
-	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"));
-	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"));
-// 	promises.push(fetch("https://ghoapi.azureedge.net/api/DIMENSION/COUNTRY/DimensionValues").then((response) => { return response.json(); }));
-	promises.push(fetchPopulation("https://latencyzero.github.io/COVID/populations.csv"));
+	let promises = [];
+	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"))
+	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"))
+	promises.push(fetchCountryMap("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"))
+// 	promises.push(fetch("https://ghoapi.azureedge.net/api/DIMENSION/COUNTRY/DimensionValues").then((response) => { return response.json(); }))
+	promises.push(fetchPopulation("https://latencyzero.github.io/COVID/populations.csv"))
 	
 	Promise.all(promises).then(
 		function()
 		{
 // 			console.log("Data fetched");
 			
-			var confirmed = arguments[0][0];
-			var deaths = arguments[0][1];
-// 			var regions = arguments[0][2]["value"];
-			var populations = arguments[0][2];
+			const confirmed = arguments[0][0];
+			const deaths = arguments[0][1];
+// 			const regions = arguments[0][2]["value"];
+			const countryMap = arguments[0][2];
+			const populations = arguments[0][3];
 			
 // 			console.log("Confirmed: " + arguments[0][0].length);
 // 			console.log("Deaths: " + arguments[0][1].length);
 // 			console.log("Recovered: " + arguments[0][2].length);
 
-			processData(confirmed, deaths, populations)
+			processData(confirmed, deaths, countryMap, populations)
 		},
 		function (err)
 		{
@@ -42,16 +44,15 @@ fetchCOVID(inURL)
 						//	The Javascript Object does seem to keep the keys
 						//	in order, but this could break.
 						
-						var keys = Object.keys(d)
+						let keys = Object.keys(d)
 						keys.splice(0, 4);
-						var counts = [];
+						let counts = [];
 						keys.forEach(key => { counts.push(parseInt(d[key])); });
 						
-						var country = d["Country/Region"].trim();
-						if (country == "US") country = "United States";		//	Fix up country names
+						let country = d["Country/Region"].trim();
 						
-						var od = { country: country, counts: counts };
-						var state = d["Province/State"].trim();
+						let od = { country: country, counts: counts };
+						let state = d["Province/State"].trim();
 						if (state)
 						{
 							od["state"] = state;
@@ -66,20 +67,36 @@ fetchCOVID(inURL)
 }
 
 function
+fetchCountryMap(inURL)
+{
+	return d3.csv(inURL,
+					function(d)
+					{
+						let country = d["Country_Region"].trim()
+						const state = d["Province_State"].trim()
+						const uid = parseInt(d["UID"].trim())
+						const iso3 = d["iso3"]
+						const key = state ? country + "-" + state : country
+						const od = { cskey: key, uid: uid, iso3: iso3 };
+						return od;
+					});
+}
+
+function
 fetchPopulation(inURL)
 {
 	return d3.csv(inURL,
 					function(d)
 					{
-						var name = d["Country Name"].trim();
+						let isoCode = d["Country Code"].trim();
 						
 						//	Find the latest population year…
 						
-						var pop = 0;
-						var year = 0;
-						for (var i = 2020; i >= 1960; --i)
+						let pop = 0;
+						let year = 0;
+						for (let i = 2020; i >= 1960; --i)
 						{
-							var s = d[i];
+							const s = d[i];
 							if (s)
 							{
 								pop = parseInt(s.trim());
@@ -90,7 +107,7 @@ fetchPopulation(inURL)
 								}
 							}
 						}
-						var od = { name: name, population: pop, year: year };
+						const od = { iso3: isoCode, population: pop, year: year };
 						return od;
 					});
 }
@@ -100,7 +117,7 @@ fetchPopulation(inURL)
 */
 
 function
-processData(inConfirmed, inDeaths, inPopulations)
+processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 {
 // 	console.log("Confirmed: " + inConfirmed.length);
 // 	console.log(inConfirmed[0]);
@@ -109,23 +126,23 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	//	Build regions list from confirmed cases…
 	
-	var regions =
+	let regions =
 		inConfirmed.map(e =>
 		{
-			var region = { country: e.country, state: e.state, full: e.full }
+			const region = { country: e.country, state: e.state, full: e.full }
 			return region
 		});
 	regions.sort((a, b) => { a.full.localeCompare(b.full) });
 	
 	//	Build maps from region to stats…
 	
-	var confirmed = new Map();
+	let confirmed = new Map();
 	inConfirmed.forEach(
 		e => {
 			confirmed.set(e.full, e.counts);
 		});
 	
-	var deaths = new Map()
+	let deaths = new Map()
 	inDeaths.forEach(
 		e => {
 			deaths.set(e.full, e.counts);
@@ -140,6 +157,14 @@ processData(inConfirmed, inDeaths, inPopulations)
 			r.latestConfirmed = Math.max(...c);
 			r.latestDeaths = Math.max(...d);
 		});
+	
+	//	Build country map…
+	
+	let countryCodeMap = {}
+	inCountryMap.forEach(cm =>
+	{
+		countryCodeMap[cm.cskey] = cm
+	})
 	
 	//	Totals for regions with sub regions…
 	
@@ -169,7 +194,7 @@ processData(inConfirmed, inDeaths, inPopulations)
 				else	//	We’re done with this country, start over
 				{
 					
-					totalsRegions.push(curTotal)
+// 					totalsRegions.push(curTotal)
 					curTotal = null
 				}
 			}
@@ -186,6 +211,34 @@ processData(inConfirmed, inDeaths, inPopulations)
 	})
 	
 	regions = tr.concat(regions)
+	
+	//	Build population map…
+	
+	let populationMap = {}
+	inPopulations.forEach(p =>
+	{
+		populationMap[p.iso3] = p
+	})
+	
+	//	Add ISO codes and populations to regions…
+	
+	regions.forEach(r =>
+	{
+		const key = r.state ? r.country + "-" + r.state : r.country
+		const cm = countryCodeMap[key]
+		if (cm)
+		{
+			r.iso3 = cm.iso3
+			r.uid = cm.uid
+			
+			const pop = populationMap[r.iso3]
+			if (pop)
+			{
+				r.population = pop.population
+				r.popYear = pop.year
+			}
+		}
+	})
 	
 	//	Group regions…
 	
@@ -215,7 +268,7 @@ processData(inConfirmed, inDeaths, inPopulations)
 		(r, k) => {
 			let opt = document.createElement("option");
 			opt.value = r.id;
-			opt.textContent = r.full + " (" + r.latestConfirmed + "/" + r.latestDeaths + ")";
+			opt.textContent = r.full + " (cases: " + r.latestConfirmed + ", deaths: " + r.latestDeaths + (r.population ? ", pop: " + r.population + ")" : ")")
 			regionSel.appendChild(opt);
 		});
 	
@@ -255,9 +308,10 @@ processData(inConfirmed, inDeaths, inPopulations)
 	
 	//	Create the main chart…
 	
-	gChartCases = createChart("cases")
-	gChartDailyCases = createChart("dailyCases")
-	gChartDeaths = createChart("deaths")
+	gChartCases = createChart("cases", "Cases")
+	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.4%")
+	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
+	gChartDeaths = createChart("deaths", "Deaths")
 	addRegionsByFilterID(1)
 }
 
@@ -290,7 +344,28 @@ computeDailyCases(ioRegion)
 	ioRegion.dailyDeaths = dailyDeaths
 }
 
+function
+computePerCapita(ioRegion)
+{
+	if (ioRegion.perCapitaConfirmed && ioRegion.perCapitaDeaths)
+	{
+		return
+	}
+	
+	let cases = []
+	let deaths = []
+	ioRegion.confirmed.forEach((c, i) =>
+	{
+		cases.push(ioRegion.confirmed[i] / ioRegion.population)
+		deaths.push(ioRegion.deaths[i] / ioRegion.population)
+	})
+	
+	ioRegion.perCapitaConfirmed = cases
+	ioRegion.perCapitaDeaths = deaths
+}
+
 var gChartCases;
+var gChartCasesPerCapita;
 var gChartDailyCases;
 var gChartDeaths;
 
@@ -307,7 +382,7 @@ getRegionByName(inName)
 }
 
 function
-createChart(inElementID)
+createChart(inElementID, inYAxisLabel, inYFormat)
 {
 	let opts = {
 		bindto: "#" + inElementID,
@@ -325,10 +400,24 @@ createChart(inElementID)
 				type: "timeseries",
 				tick: { format: "%b-%d", values: [ new Date(2020, 0, 22), new Date(2020, 1, 1), new Date(2020, 1, 15), new Date(2020, 2, 1), new Date(2020, 2, 15), new Date(2020, 3, 1), new Date(2020, 3, 15), new Date(2020, 4, 1), new Date(2020, 4, 15), new Date(2020, 5, 1), new Date(2020, 5, 15) ] }
 			},
-			y: { label: { text: "Cases", position: "outer-middle" } },
+			y: {
+				label: { text: inYAxisLabel, position: "outer-middle" },
+				tick: {
+					format: inYFormat ? d3.format(inYFormat) : null
+				}
+			},
 			y2: { show: false }
 		},
-		tooltip: { grouped: false }
+		tooltip: {
+			grouped: false,
+			format: {
+				value:
+					function (inV, inRatio, inID)
+					{
+						return inYFormat ? d3.format(inYFormat)(inV) : inV
+					}
+			}
+		}
 	}
 	return c3.generate(opts);
 }
@@ -359,6 +448,7 @@ addRegion(inRegion)
 	let deaths = inRegion.deaths;
 	
 	computeDailyCases(inRegion)
+	computePerCapita(inRegion)
 	
 	//	Get the max value…
 	
@@ -368,7 +458,7 @@ addRegion(inRegion)
 	
 	let regionDates = inRegion.confirmed.map((e, idx) =>
 	{
-		var d = new Date(2020, 0, 22);
+		let d = new Date(2020, 0, 22);
 		d.setDate(d.getDate() + idx);
 		return d;
 	})
@@ -385,6 +475,20 @@ addRegion(inRegion)
 		names:
 		{
 			["c" + inRegion.id] : inRegion.full + "",
+		}
+	});
+	
+	gChartCasesPerCapita.load({
+		x: "x",
+		columns:
+		[
+			dates,
+			["pc" + inRegion.id].concat(inRegion.perCapitaConfirmed),
+		],
+		type: "line",
+		names:
+		{
+			["pc" + inRegion.id] : inRegion.full + " (per capita)",
 		}
 	});
 	
@@ -518,7 +622,7 @@ var gSelectedRegions = new Set();
 function
 chartMax(inMax)
 {
-	var inc;
+	let inc;
 	if (inMax < 1000) inc = 100;
 	else if (inMax < 10000) inc = 1000;
 	else if (inMax < 100000) inc = 10000;
@@ -527,113 +631,3 @@ chartMax(inMax)
 	
 	return Math.ceil(inMax / inc) * inc;
 }
-
-//     var chart;
-//     var data;
-//     var legendPosition = "top";
-// 
-//     var randomizeFillOpacity = function() {
-//         var rand = Math.random(0,1);
-//         for (var i = 0; i < 100; i++) { // modify sine amplitude
-//             data[4].values[i].y = Math.sin(i/(5 + rand)) * .4 * rand - .25;
-//         }
-//         data[4].fillOpacity = rand;
-//         chart.update();
-//     };
-// 
-//     var toggleLegend = function() {
-//         if (legendPosition == "top") {
-//             legendPosition = "bottom";
-//         } else {
-//             legendPosition = "top";
-//         }
-//         chart.legendPosition(legendPosition);
-//         chart.update();
-//     };
-// 
-//     nv.addGraph(function() {
-//         chart = nv.models.lineChart()
-//             .options({
-//                 duration: 300,
-//                 useInteractiveGuideline: true
-//             })
-//         ;
-// 
-//         // chart sub-models (ie. xAxis, yAxis, etc) when accessed directly, return themselves, not the parent chart, so need to chain separately
-//         chart.xAxis
-//             .axisLabel("Time (s)")
-//             .tickFormat(d3.format(',.1f'))
-//             .staggerLabels(true)
-//         ;
-// 
-//         chart.yAxis
-//             .axisLabel('Voltage (v)')
-//             .tickFormat(function(d) {
-//                 if (d == null) {
-//                     return 'N/A';
-//                 }
-//                 return d3.format(',.2f')(d);
-//             })
-//         ;
-// 
-//         data = sinAndCos();
-// 
-//         d3.select('#chart1').append('svg')
-//             .datum(data)
-//             .call(chart);
-// 
-//         nv.utils.windowResize(chart.update);
-// 
-//         return chart;
-//     });
-
-    function sinAndCos() {
-        var sin = [],
-            sin2 = [],
-            cos = [],
-            rand = [],
-            rand2 = []
-            ;
-
-        for (var i = 0; i < 100; i++) {
-            sin.push({x: i, y: i % 10 == 5 ? null : Math.sin(i/10) }); //the nulls are to show how defined works
-            sin2.push({x: i, y: Math.sin(i/5) * 0.4 - 0.25});
-            cos.push({x: i, y: .5 * Math.cos(i/10)});
-            rand.push({x:i, y: Math.random() / 10});
-            rand2.push({x: i, y: Math.cos(i/10) + Math.random() / 10 })
-        }
-
-        return [
-            {
-                area: true,
-                values: sin,
-                key: "Sine Wave",
-                color: "#ff7f0e",
-                strokeWidth: 4,
-                classed: 'dashed'
-            },
-            {
-                values: cos,
-                key: "Cosine Wave",
-                color: "#2ca02c"
-            },
-            {
-                values: rand,
-                key: "Random Points",
-                color: "#2222ff"
-            },
-            {
-                values: rand2,
-                key: "Random Cosine",
-                color: "#667711",
-                strokeWidth: 3.5
-            },
-            {
-                area: true,
-                values: sin2,
-                key: "Fill opacity",
-                color: "#EF9CFB",
-                fillOpacity: .1
-            }
-        ];
-    }
