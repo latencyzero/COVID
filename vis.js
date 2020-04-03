@@ -313,6 +313,38 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
 	addRegionsByFilterID(1)
+	
+	//	Set up the minimum date slider…
+	
+	let minMinDate = new Date(2020, 0, 22)
+	let maxMinDate = new Date();
+	var slider = d3
+		.sliderBottom()
+		.min(minMinDate)
+		.max(maxMinDate)
+		.tickFormat(d3.timeFormat("%b-%d"))
+		.step(1)
+		.ticks(2)
+		.width(700)
+		.default([minMinDate, maxMinDate])
+		.displayValue(true)
+		.on('onchange', val => {
+			const min = val[0]
+			const max = val[1]
+			
+			gChartCases.axis.range({ min: { x : min }, max: { x : max } })
+			gChartCasesPerCapita.axis.range({ min: { x : min }, max: { x : max } })
+			gChartDailyCases.axis.range({ min: { x : min }, max: { x : max } })
+			gChartDeaths.axis.range({ min: { x : min }, max: { x : max } })
+		});
+
+	d3.select('#minDate')
+		.append('svg')
+		.attr('width', 800)
+		.attr('height', 100)
+		.append('g')
+		.attr('transform', 'translate(30,30)')
+		.call(slider);
 }
 
 /**
@@ -398,7 +430,7 @@ createChart(inElementID, inYAxisLabel, inYFormat)
 			{
 				label: { text: "Day", position: "outer-middle" },
 				type: "timeseries",
-				tick: { format: "%b-%d", values: [ new Date(2020, 0, 22), new Date(2020, 1, 1), new Date(2020, 1, 15), new Date(2020, 2, 1), new Date(2020, 2, 15), new Date(2020, 3, 1), new Date(2020, 3, 15), new Date(2020, 4, 1), new Date(2020, 4, 15), new Date(2020, 5, 1), new Date(2020, 5, 15) ] }
+				tick: { format: "%b-%d", values: [ new Date(2020, 0, 22), new Date(2020, 1, 1), new Date(2020, 1, 15), new Date(2020, 2, 1), new Date(2020, 2, 15), new Date(2020, 3, 1), new Date(2020, 3, 15), new Date(2020, 4, 1), new Date(2020, 4, 15), new Date(2020, 5, 1), new Date(2020, 5, 15) ] },
 			},
 			y: {
 				label: { text: inYAxisLabel, position: "outer-middle" },
@@ -419,7 +451,10 @@ createChart(inElementID, inYAxisLabel, inYFormat)
 			}
 		}
 	}
-	return c3.generate(opts);
+	let chart = c3.generate(opts)
+// 	setTimeout(function() { chart.axis.min({x: new Date(2020, 2, 1)}) }, 5000)
+	
+	return chart
 }
 
 function
@@ -488,7 +523,7 @@ addRegion(inRegion)
 		type: "line",
 		names:
 		{
-			["pc" + inRegion.id] : inRegion.full + " (per capita)",
+			["pc" + inRegion.id] : inRegion.full,
 		}
 	});
 	
@@ -631,3 +666,22 @@ chartMax(inMax)
 	
 	return Math.ceil(inMax / inc) * inc;
 }
+
+
+// Copies a variable number of methods from source to target.
+d3.rebind = function(target, source) {
+  var i = 1, n = arguments.length, method;
+  while (++i < n) target[method = arguments[i]] = d3_rebind(target, source, source[method]);
+  return target;
+};
+
+// Method is assumed to be a standard D3 getter-setter:
+// If passed with no arguments, gets the value.
+// If passed with arguments, sets the value and returns the target.
+function d3_rebind(target, source, method) {
+  return function() {
+	var value = method.apply(source, arguments);
+	return value === source ? target : value;
+  };
+}
+

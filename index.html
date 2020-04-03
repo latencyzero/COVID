@@ -12,10 +12,12 @@
 	<link rel="stylesheet" href="main.css" type="text/css">
 	<link href="c3.css" rel="stylesheet">	
 	
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.js" charset="utf-8"></script>
+<!-- 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.js" charset="utf-8"></script> -->
+	<script src="https://d3js.org/d3.v5.min.js"></script>
 	<script src="https://d3js.org/d3-dsv.v1.js"></script>
 	<script src="c3.js"></script>
 	<script src="d3-fetch.v1.js"></script>
+	<script src="https://unpkg.com/d3-simple-slider"></script>
 	<script src="vis.js"></script>
 
 	<style>
@@ -93,6 +95,8 @@
 </select>
 
 <button onclick="removeAllRegions()">Clear All</button>
+
+<div id="minDate" style="display: inline-block"></div>
 
 <h2>Confirmed Cases</h2>
 
