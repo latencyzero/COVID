@@ -1,5 +1,80 @@
+html, body
+{
+	margin: 0; padding: 0
+}
+
 html
 {
-	margin: 0;
 	font-family: Georgia serif;
+}
+
+body
+{
+	font-family: sans-serif;
+}
+
+div.header
+{
+	margin-left: 1em;
+}
+
+div.controls
+{
+	margin: 1em;
+}
+
+div.charts
+{
+	margin: 1em;
+}
+
+text
+{
+	font: 12px sans-serif;
+}
+
+svg {
+	display: block;
+}
+
+span.region
+{
+	border-radius: 4px;
+	padding: 5px;
+	background-color: #eef;
+	margin-left: 0.5em;
+	margin-bottom: 0.5em;
+	display: inline-block;
+}
+
+span.region a
+{
+	cursor: pointer;
+	margin-left: 0.5em;
+	margin-right: 0.5em;
+}
+
+.footer
+{
+	color: gray;
+	font-size: smaller;
+	padding-bottom: 1em;
+	margin-top: 5em;
+}
+
+.footer p img
+{
+	vertical-align: middle;
+	margin: 0.2em;
+}
+.footer p
+{
+	margin: 0.2em;
+}
+
+div#tags1
+{
+	margin-top: 2em;
+	margin-left: 4em;
+	font-size: smaller;
 }
