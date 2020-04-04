@@ -114,6 +114,18 @@ fetchPopulation(inURL)
 
 /**
 	Post-process the data into structures suitable for our use.
+	
+	Region
+		country
+		state
+		full
+		confirmed
+		deaths
+		dailyConfirmed
+		dailyDeaths
+		perCapitaConfirmed
+		perCapitaDeaths
+		deathsPerCases
 */
 
 function
@@ -312,6 +324,19 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.4%")
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
+	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.4%")
+	
+	gAllCharts =
+	[
+		gChartCases,
+		gChartCasesPerCapita,
+		gChartDailyCases,
+		gChartDeaths,
+		gChartDeathPercentages,
+	]
+	
+	//	Load some default data…
+	
 	addRegionsByFilterID(1)
 	
 	//	Set up the minimum date slider…
@@ -333,11 +358,8 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 			{
 				const min = val[0]
 				const max = val[1]
-			
-				gChartCases.axis.range({ min: { x : min }, max: { x : max } })
-				gChartCasesPerCapita.axis.range({ min: { x : min }, max: { x : max } })
-				gChartDailyCases.axis.range({ min: { x : min }, max: { x : max } })
-				gChartDeaths.axis.range({ min: { x : min }, max: { x : max } })
+				
+				gAllCharts.forEach(c => c.axis.range({ min: { x : min }, max: { x : max } }))
 			})
 
 	d3.select('#minDate')
@@ -349,11 +371,17 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		.call(slider)
 }
 
+var gRegions;
+var gFilters;
+var gSelectedRegions = new Set();
+
 var gChartCases;
 var gChartCasesPerCapita;
 var gChartDailyCases;
 var gChartDeaths;
+var gChartDeathPercentages;
 
+var gAllCharts = [];
 
 /**
 	Computes the new cases for the specified region if needed.
@@ -402,6 +430,24 @@ computePerCapita(ioRegion)
 	
 	ioRegion.perCapitaConfirmed = cases
 	ioRegion.perCapitaDeaths = deaths
+}
+
+function
+computeDeathsPerCases(ioRegion)
+{
+	if (ioRegion.deathsPerCases)
+	{
+		return
+	}
+	
+	let deaths = []
+	ioRegion.deaths.forEach(
+		(d, i) =>
+		{
+			deaths.push(d / ioRegion.confirmed[i])
+		})
+	
+	ioRegion.deathsPerCases = deaths
 }
 
 function
@@ -487,6 +533,7 @@ addRegion(inRegion)
 	
 	computeDailyCases(inRegion)
 	computePerCapita(inRegion)
+	computeDeathsPerCases(inRegion)
 	
 	//	Get the max value…
 	
@@ -501,64 +548,34 @@ addRegion(inRegion)
 		return d;
 	})
 	
+	//	Load the charts with data…
+	
 	let dates = ["x"].concat(regionDates);
-	gChartCases.load({
-		x: "x",
-		columns:
-		[
-			dates,
-			["c" + inRegion.id].concat(inRegion.confirmed),
-		],
-		type: "line",
-		names:
-		{
-			["c" + inRegion.id] : inRegion.full + "",
-		}
-	});
-	
-	gChartCasesPerCapita.load({
-		x: "x",
-		columns:
-		[
-			dates,
-			["pc" + inRegion.id].concat(inRegion.perCapitaConfirmed),
-		],
-		type: "line",
-		names:
-		{
-			["pc" + inRegion.id] : inRegion.full,
-		}
-	});
-	
-	gChartDailyCases.load({
-		x: "x",
-		columns:
-		[
-			dates,
-			["dc" + inRegion.id].concat(inRegion.dailyConfirmed)
-		],
-		type: "line",
-		names:
-		{
-			["dc" + inRegion.id] : inRegion.full + "",
-		}
-	});
-	
-	gChartDeaths.load({
-		x: "x",
-		columns:
-		[
-			dates,
-			["d" + inRegion.id].concat(inRegion.deaths)
-		],
-		type: "line",
-		names:
-		{
-			["d" + inRegion.id] : inRegion.full + "",
-		}
-	});
+	loadChart(gChartCases, dates, inRegion, "confirmed")
+	loadChart(gChartCasesPerCapita, dates, inRegion, "perCapitaConfirmed")
+	loadChart(gChartDailyCases, dates, inRegion, "dailyConfirmed")
+	loadChart(gChartDeaths, dates, inRegion, "deaths")
+	loadChart(gChartDeathPercentages, dates, inRegion, "deathsPerCases")
 	
 	gSelectedRegions.add(inRegion.id)
+}
+
+function
+loadChart(inChart, inDates, inRegion, inData)
+{
+	inChart.load({
+		x: "x",
+		columns:
+		[
+			inDates,
+			["d" + inRegion.id].concat(inRegion[inData]),
+		],
+		type: "line",
+		names:
+		{
+			["d" + inRegion.id] : inRegion.full,
+		}
+	});
 }
 
 function
@@ -580,12 +597,9 @@ addSeriesToChart(inChart)
 function
 removeAllRegions()
 {
-	gChartCases.unload()
-	gChartCasesPerCapita.unload()
-	gChartDailyCases.unload()
-	gChartDeaths.unload()
-	gSelectedRegions.clear()
+	gAllCharts.forEach(c => c.unload())
 	
+	gSelectedRegions.clear()
 	removeAllRegionTags()
 }
 
@@ -595,10 +609,7 @@ removeRegion(inRegionID, inChartID)
 	removeRegionTag(inRegionID, inChartID)
 	
 	let region = getRegionByID(inRegionID)
-	gChartCases.unload({ ids: ["c" + region.id] })
-	gChartCasesPerCapita.unload({ ids: ["pc" + region.id] })
-	gChartDailyCases.unload({ ids: ["dc" + region.id] })
-	gChartDeaths.unload({ ids: ["d" + region.id] })
+	gAllCharts.forEach(c => c.unload({ ids: ["d" + region.id] }))
 	
 	gSelectedRegions.delete(inRegionID)
 }
@@ -641,12 +652,6 @@ removeAllRegionTags()
 		.selectAll("*")
 			.remove()
 }
-
-var gConfirmed;
-var gDeaths;
-var gRegions;
-var gFilters;
-var gSelectedRegions = new Set();
 
 
 /**
