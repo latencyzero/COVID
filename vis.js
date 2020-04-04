@@ -345,9 +345,19 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		gChartDeathPercentages,
 	]
 	
-	//	Load some default data…
+	//	Load some default data, after a delay to let
+	//	the charts show up…
 	
-	setTimeout(function() { addRegionsByFilterID(1) }, 10)
+	setTimeout(function()
+	{
+		addRegionsByFilterID(1)
+		
+		//	Iran has some outlier data and shows up on the top 10 list, so
+		//	suppress it by default in the deaths/cases chart…
+		
+		let iran = getRegionByName("Iran")
+		gChartDeathPercentages.toggle("d" + iran.id)
+	 }, 10)
 	
 	//	Set up the minimum date slider…
 	
@@ -555,14 +565,7 @@ addRegions(inRegions)
 	loadChart(gChartCasesPerCapita, dates, regions, "perCapitaConfirmed")
 	loadChart(gChartDailyCases, dates, regions, "dailyConfirmed")
 	loadChart(gChartDeaths, dates, regions, "deaths")
-	loadChart(gChartDeathPercentages, dates, regions, "deathsPerCases",
-		function () { 
-			//	Iran has some outlier data and shows up on the top 10 list, so
-			//	suppress it by default in the deaths/cases chart…
-	
-			let iran = getRegionByName("Iran")
-			gChartDeathPercentages.toggle("d" + iran.id, { withLegend: true })
-		})
+	loadChart(gChartDeathPercentages, dates, regions, "deathsPerCases")
 }
 
 function
