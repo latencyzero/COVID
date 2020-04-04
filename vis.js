@@ -330,11 +330,11 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	
 	//	Create the main chart…
 	
-	gChartCases = createChart("cases", "Cases")
+	gChartCases = createChart("cases", "Cases", ",.0r")
 	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.2%")
-	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
-	gChartDeaths = createChart("deaths", "Deaths")
-	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.0%", ",.1%")
+	gChartDailyCases = createChart("dailyCases", "New Cases per Day", ",.0r")
+	gChartDeaths = createChart("deaths", "Deaths", ",.0r")
+	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.1%", ",.1%")
 	
 	gAllCharts =
 	[
@@ -509,9 +509,10 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 				type: "linear",
 				min: 0,
 				tick: {
-					format: inYFormat ? d3.format(inYFormat) : null
+					format: inYFormat ? d3.format(inYFormat) : null,
+// 					values: [ 0, 1, 10, 100, 1000, 10000, 100000, 1000000 ]
 				},
-				padding: { bottom: 20 }
+				padding: { bottom: 0.1 }
 			},
 			y2: { show: false }
 		},
@@ -678,7 +679,6 @@ changeAllScales(inType)
 		c => 
 		{
 			c.axis.types({ y : inType })
-			c.axis.min({ y : 0 })
 		})
 
 }
