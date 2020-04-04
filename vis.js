@@ -324,7 +324,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.4%")
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
-	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.4%")
+	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.0%")
 	
 	gAllCharts =
 	[
