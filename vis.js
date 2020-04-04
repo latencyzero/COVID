@@ -328,15 +328,17 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		.width(700)
 		.default([minMinDate, maxMinDate])
 		.displayValue(true)
-		.on('onchange', val => {
-			const min = val[0]
-			const max = val[1]
+		.on('onchange',
+			val =>
+			{
+				const min = val[0]
+				const max = val[1]
 			
-			gChartCases.axis.range({ min: { x : min }, max: { x : max } })
-			gChartCasesPerCapita.axis.range({ min: { x : min }, max: { x : max } })
-			gChartDailyCases.axis.range({ min: { x : min }, max: { x : max } })
-			gChartDeaths.axis.range({ min: { x : min }, max: { x : max } })
-		});
+				gChartCases.axis.range({ min: { x : min }, max: { x : max } })
+				gChartCasesPerCapita.axis.range({ min: { x : min }, max: { x : max } })
+				gChartDailyCases.axis.range({ min: { x : min }, max: { x : max } })
+				gChartDeaths.axis.range({ min: { x : min }, max: { x : max } })
+			})
 
 	d3.select('#minDate')
 		.append('svg')
@@ -344,8 +346,14 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		.attr('height', 100)
 		.append('g')
 		.attr('transform', 'translate(30,30)')
-		.call(slider);
+		.call(slider)
 }
+
+var gChartCases;
+var gChartCasesPerCapita;
+var gChartDailyCases;
+var gChartDeaths;
+
 
 /**
 	Computes the new cases for the specified region if needed.
@@ -395,11 +403,6 @@ computePerCapita(ioRegion)
 	ioRegion.perCapitaConfirmed = cases
 	ioRegion.perCapitaDeaths = deaths
 }
-
-var gChartCases;
-var gChartCasesPerCapita;
-var gChartDailyCases;
-var gChartDeaths;
 
 function
 getRegionByID(inID)
@@ -578,6 +581,7 @@ function
 removeAllRegions()
 {
 	gChartCases.unload()
+	gChartCasesPerCapita.unload()
 	gChartDailyCases.unload()
 	gChartDeaths.unload()
 	gSelectedRegions.clear()
@@ -591,15 +595,10 @@ removeRegion(inRegionID, inChartID)
 	removeRegionTag(inRegionID, inChartID)
 	
 	let region = getRegionByID(inRegionID)
-	gChartCases.unload({
-		ids: ["c" + region.id]
-	});
-	gChartDailyCases.unload({
-		ids: ["dc" + region.id]
-	});
-	gChartDeaths.unload({
-		ids: ["d" + region.id]
-	});
+	gChartCases.unload({ ids: ["c" + region.id] })
+	gChartCasesPerCapita.unload({ ids: ["pc" + region.id] })
+	gChartDailyCases.unload({ ids: ["dc" + region.id] })
+	gChartDeaths.unload({ ids: ["d" + region.id] })
 	
 	gSelectedRegions.delete(inRegionID)
 }
