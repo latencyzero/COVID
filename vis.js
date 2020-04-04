@@ -510,7 +510,7 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 				min: 0,
 				tick: {
 					format: inYFormat ? d3.format(inYFormat) : null,
-// 					values: [ 0, 1, 10, 100, 1000, 10000, 100000, 1000000 ]
+					values: [ 0, 10, 100, 1000, 10000, 100000, 1000000 ]
 				},
 				padding: { bottom: 0.1 }
 			},
