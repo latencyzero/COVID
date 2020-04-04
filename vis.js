@@ -541,8 +541,9 @@ addRegionByID(inRegionID)
 function
 addRegions(inRegions)
 {
+	let regions = inRegions instanceof Array ? inRegions : [inRegions]
 	//TODO: check against gSelectedRegions
-	let regions = inRegions.filter(r => !gSelectedRegions.has(r))
+	regions = regions.filter(r => !gSelectedRegions.has(r))
 	
 	//	Compute derived data…
 	
