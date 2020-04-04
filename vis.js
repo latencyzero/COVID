@@ -506,9 +506,12 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 			},
 			y: {
 				label: { text: inYAxisLabel, position: "outer-middle" },
+				type: "linear",
+				min: 0,
 				tick: {
 					format: inYFormat ? d3.format(inYFormat) : null
-				}
+				},
+				padding: { bottom: 20 }
 			},
 			y2: { show: false }
 		},
@@ -668,6 +671,17 @@ removeAllRegionTags()
 			.remove()
 }
 
+function
+changeAllScales(inType)
+{
+	gAllCharts.forEach(
+		c => 
+		{
+			c.axis.types({ y : inType })
+			c.axis.min({ y : 0 })
+		})
+
+}
 
 /**
 	Returns a maximum value somewhat larger than inMax.

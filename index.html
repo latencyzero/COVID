@@ -55,6 +55,12 @@
 
 	<button onclick="removeAllRegions()">Clear All</button>
 
+	<label for="filters">Scale:</label>
+	<select id="filters" onchange="changeAllScales(this.options[this.selectedIndex].value)">
+		<option value="linear">Linear</option>
+		<option value="log">Log</option>
+	</select>
+
 	<div id="minDate" style="display: inline-block"></div>
 </div>
 
