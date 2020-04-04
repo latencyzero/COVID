@@ -324,7 +324,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.2%")
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
-	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.0%")
+	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.0%", ",.1%")
 	
 	gAllCharts =
 	[
@@ -463,8 +463,9 @@ getRegionByName(inName)
 }
 
 function
-createChart(inElementID, inYAxisLabel, inYFormat)
+createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 {
+	let legendFormat = inLegendDataFormat || inYFormat
 	let opts = {
 		bindto: "#" + inElementID,
 		data:
@@ -495,7 +496,7 @@ createChart(inElementID, inYAxisLabel, inYFormat)
 				value:
 					function (inV, inRatio, inID)
 					{
-						return inYFormat ? d3.format(inYFormat)(inV) : inV
+						return inYFormat ? d3.format(legendFormat)(inV) : inV
 					}
 			}
 		}
