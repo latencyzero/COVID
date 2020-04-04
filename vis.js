@@ -321,7 +321,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	//	Create the main chart…
 	
 	gChartCases = createChart("cases", "Cases")
-	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.4%")
+	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.2%")
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
 	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.0%")
@@ -501,7 +501,6 @@ createChart(inElementID, inYAxisLabel, inYFormat)
 		}
 	}
 	let chart = c3.generate(opts)
-// 	setTimeout(function() { chart.axis.min({x: new Date(2020, 2, 1)}) }, 5000)
 	
 	return chart
 }
@@ -509,11 +508,11 @@ createChart(inElementID, inYAxisLabel, inYFormat)
 function
 addRegionByID(inRegionID)
 {
-	setTimeout(function()
-	{
+// 	setTimeout(function()
+// 	{
 		let region = getRegionByID(inRegionID)
 		addRegion(region)
-	}, 10);
+// 	}, 10);
 }
 
 function
@@ -555,13 +554,23 @@ addRegion(inRegion)
 	loadChart(gChartCasesPerCapita, dates, inRegion, "perCapitaConfirmed")
 	loadChart(gChartDailyCases, dates, inRegion, "dailyConfirmed")
 	loadChart(gChartDeaths, dates, inRegion, "deaths")
-	loadChart(gChartDeathPercentages, dates, inRegion, "deathsPerCases")
+	loadChart(gChartDeathPercentages, dates, inRegion, "deathsPerCases",
+		function () { 
+			//	Iran has some outlier data and shows up on the top 10 list, so
+			//	suppress it by default in the deaths/cases chart…
+	
+			let iran = getRegionByName("Iran")
+			gChartDeathPercentages.toggle("d" + iran.id, { withLegend: true })
+		})
+	
+	
+	//	Keep track of this newly-added region…
 	
 	gSelectedRegions.add(inRegion.id)
 }
 
 function
-loadChart(inChart, inDates, inRegion, inData)
+loadChart(inChart, inDates, inRegion, inData, inDone)
 {
 	inChart.load({
 		x: "x",
@@ -574,19 +583,20 @@ loadChart(inChart, inDates, inRegion, inData)
 		names:
 		{
 			["d" + inRegion.id] : inRegion.full,
-		}
+		},
+		done: inDone
 	});
 }
 
 function
 addRegionsByFilterID(inFilterID)
 {
-	setTimeout(function()
-	{
+// 	setTimeout(function()
+// 	{
 		let filter = gFilters.find(f => f.id == inFilterID)
 		let regions = filter.filter(gRegions)
 		regions.forEach(r => addRegion(r))
-	}, 10);
+// 	}, 10);
 }
 
 function
