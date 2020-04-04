@@ -1,7 +1,7 @@
 function
 loadData()
 {
-	let promises = [];
+	let promises = []
 	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"))
 	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"))
 	promises.push(fetchCountryMap("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"))
@@ -11,25 +11,25 @@ loadData()
 	Promise.all(promises).then(
 		function()
 		{
-// 			console.log("Data fetched");
+// 			console.log("Data fetched")
 			
-			const confirmed = arguments[0][0];
-			const deaths = arguments[0][1];
-// 			const regions = arguments[0][2]["value"];
-			const countryMap = arguments[0][2];
-			const populations = arguments[0][3];
+			const confirmed = arguments[0][0]
+			const deaths = arguments[0][1]
+// 			const regions = arguments[0][2]["value"]
+			const countryMap = arguments[0][2]
+			const populations = arguments[0][3]
 			
-// 			console.log("Confirmed: " + arguments[0][0].length);
-// 			console.log("Deaths: " + arguments[0][1].length);
-// 			console.log("Recovered: " + arguments[0][2].length);
+// 			console.log("Confirmed: " + arguments[0][0].length)
+// 			console.log("Deaths: " + arguments[0][1].length)
+// 			console.log("Recovered: " + arguments[0][2].length)
 
 			processData(confirmed, deaths, countryMap, populations)
 		},
 		function (err)
 		{
-			console.log("Error fetching CSV data: " + err);
+			console.log("Error fetching CSV data: " + err)
 		}
-	);
+	)
 }
 
 function
@@ -45,25 +45,25 @@ fetchCOVID(inURL)
 						//	in order, but this could break.
 						
 						let keys = Object.keys(d)
-						keys.splice(0, 4);
-						let counts = [];
-						keys.forEach(key => { counts.push(parseInt(d[key])); });
+						keys.splice(0, 4)
+						let counts = []
+						keys.forEach(key => { counts.push(parseInt(d[key])) })
 						
-						let country = d["Country/Region"].trim();
+						let country = d["Country/Region"].trim()
 						
-						let od = { country: country, counts: counts };
-						let state = d["Province/State"].trim();
+						let od = { country: country, counts: counts }
+						let state = d["Province/State"].trim()
 						if (state)
 						{
-							od["state"] = state;
-							od["full"] = country + " - " + state;
+							od["state"] = state
+							od["full"] = country + " - " + state
 						}
 						else
 						{
 							od["full"] = country
 						}
-						return od;
-					});
+						return od
+					})
 }
 
 function
@@ -77,9 +77,9 @@ fetchCountryMap(inURL)
 						const uid = parseInt(d["UID"].trim())
 						const iso3 = d["iso3"]
 						const key = state ? country + "-" + state : country
-						const od = { cskey: key, uid: uid, iso3: iso3 };
-						return od;
-					});
+						const od = { cskey: key, uid: uid, iso3: iso3 }
+						return od
+					})
 }
 
 function
@@ -88,28 +88,28 @@ fetchPopulation(inURL)
 	return d3.csv(inURL,
 					function(d)
 					{
-						let isoCode = d["Country Code"].trim();
+						let isoCode = d["Country Code"].trim()
 						
 						//	Find the latest population year…
 						
-						let pop = 0;
-						let year = 0;
+						let pop = 0
+						let year = 0
 						for (let i = 2020; i >= 1960; --i)
 						{
-							const s = d[i];
+							const s = d[i]
 							if (s)
 							{
-								pop = parseInt(s.trim());
-								year = i;
+								pop = parseInt(s.trim())
+								year = i
 								if (pop)
 								{
-									break;
+									break
 								}
 							}
 						}
-						const od = { iso3: isoCode, population: pop, year: year };
-						return od;
-					});
+						const od = { iso3: isoCode, population: pop, year: year }
+						return od
+					})
 }
 
 /**
@@ -131,10 +131,10 @@ fetchPopulation(inURL)
 function
 processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 {
-// 	console.log("Confirmed: " + inConfirmed.length);
-// 	console.log(inConfirmed[0]);
-// 	console.log("Countries: " + inCountries.length);
-// 	console.log("Populations: " + inPopulations.length);
+// 	console.log("Confirmed: " + inConfirmed.length)
+// 	console.log(inConfirmed[0])
+// 	console.log("Countries: " + inCountries.length)
+// 	console.log("Populations: " + inPopulations.length)
 	
 	//	Build regions list from confirmed cases…
 	
@@ -143,32 +143,42 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		{
 			const region = { country: e.country, state: e.state, full: e.full }
 			return region
-		});
-	regions.sort((a, b) => { a.full.localeCompare(b.full) });
+		})
+	regions.sort((a, b) => { a.full.localeCompare(b.full) })
 	
 	//	Build maps from region to stats…
 	
-	let confirmed = new Map();
+	let confirmed = new Map()
 	inConfirmed.forEach(
 		e => {
-			confirmed.set(e.full, e.counts);
-		});
+			confirmed.set(e.full, e.counts)
+		})
 	
 	let deaths = new Map()
 	inDeaths.forEach(
 		e => {
-			deaths.set(e.full, e.counts);
-		});
+			deaths.set(e.full, e.counts)
+		})
 	
 	regions.forEach(r =>
 		{
-			let c = confirmed.get(r.full);
-			let d = deaths.get(r.full);
-			r.confirmed = c;
-			r.deaths = d;
-			r.latestConfirmed = Math.max(...c);
-			r.latestDeaths = Math.max(...d);
-		});
+			let c = confirmed.get(r.full)
+			let d = deaths.get(r.full)
+			r.confirmed = c
+			r.deaths = d
+			r.latestConfirmed = Math.max(...c)
+			r.latestDeaths = Math.max(...d)
+		})
+	
+	//	Build a list of dates spanning the data,
+	//	using an arbitrary region’s confirmed cases…
+	
+	for (let i = 0; i < regions[0].confirmed.length; ++i)
+	{
+		let d = new Date(2020, 0, 22)
+		d.setDate(d.getDate() + i)
+		gDates.push(d)
+	}
 	
 	//	Build country map…
 	
@@ -218,8 +228,8 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	let tr = Object.values(totalsRegions)
 	tr.forEach(r =>
 	{
-		r.latestConfirmed = Math.max(...r.confirmed);
-		r.latestDeaths = Math.max(...r.deaths);
+		r.latestConfirmed = Math.max(...r.confirmed)
+		r.latestDeaths = Math.max(...r.deaths)
 	})
 	
 	regions = tr.concat(regions)
@@ -268,21 +278,21 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		{
 			return Math.sign(b.sequence - a.sequence)
 		}
-	});
-	regions.forEach((r, idx) => { r["id"] = idx });
+	})
+	regions.forEach((r, idx) => { r["id"] = idx })
 	
-	gRegions = regions;
+	gRegions = regions
 	
 	//	Update the regions menu…
 	
-	let regionSel = document.getElementById("regions");
+	let regionSel = document.getElementById("regions")
 	regions.forEach(
 		(r, k) => {
-			let opt = document.createElement("option");
-			opt.value = r.id;
+			let opt = document.createElement("option")
+			opt.value = r.id
 			opt.textContent = r.full + " (cases: " + r.latestConfirmed + ", deaths: " + r.latestDeaths + (r.population ? ", pop: " + r.population + ")" : ")")
-			regionSel.appendChild(opt);
-		});
+			regionSel.appendChild(opt)
+		})
 	
 	//	Populate filters…
 	
@@ -296,7 +306,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 			results = results.sort((a, b) => b.latestConfirmed - a.latestConfirmed).slice(0, 10)
 			return results
 		}
-	});
+	})
 	filters.push({
 		name: "Top 10 Countries by Deaths",
 		id: 1,
@@ -306,17 +316,17 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 			results = results.sort((a, b) => b.latestDeaths - a.latestDeaths).slice(0, 10)
 			return results
 		}
-	});
+	})
 	gFilters = filters
 	
-	let filtersSel = document.getElementById("filters");
+	let filtersSel = document.getElementById("filters")
 	filters.forEach(
 		(f) => {
-			let opt = document.createElement("option");
-			opt.value = f.id;
-			opt.textContent = f.name;
-			filtersSel.appendChild(opt);
-		});
+			let opt = document.createElement("option")
+			opt.value = f.id
+			opt.textContent = f.name
+			filtersSel.appendChild(opt)
+		})
 	
 	//	Create the main chart…
 	
@@ -337,12 +347,12 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 	
 	//	Load some default data…
 	
-	addRegionsByFilterID(1)
+	setTimeout(function() { addRegionsByFilterID(1) }, 10)
 	
 	//	Set up the minimum date slider…
 	
 	let minMinDate = new Date(2020, 0, 22)
-	let maxMinDate = new Date();
+	let maxMinDate = new Date()
 	var slider = d3
 		.sliderBottom()
 		.min(minMinDate)
@@ -371,17 +381,19 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		.call(slider)
 }
 
-var gRegions;
-var gFilters;
-var gSelectedRegions = new Set();
+var gRegions
+var gFilters
+var gSelectedRegions = new Set()
 
-var gChartCases;
-var gChartCasesPerCapita;
-var gChartDailyCases;
-var gChartDeaths;
-var gChartDeathPercentages;
+var	gDates = []
 
-var gAllCharts = [];
+var gChartCases
+var gChartCasesPerCapita
+var gChartDailyCases
+var gChartDeaths
+var gChartDeathPercentages
+
+var gAllCharts = []
 
 /**
 	Computes the new cases for the specified region if needed.
@@ -453,13 +465,13 @@ computeDeathsPerCases(ioRegion)
 function
 getRegionByID(inID)
 {
-	return gRegions[inID];
+	return gRegions[inID]
 }
 
 function
 getRegionByName(inName)
 {
-	return gRegions.find(r => r.full == inName);
+	return gRegions.find(r => r.full == inName)
 }
 
 function
@@ -512,50 +524,38 @@ addRegionByID(inRegionID)
 // 	setTimeout(function()
 // 	{
 		let region = getRegionByID(inRegionID)
-		addRegion(region)
-// 	}, 10);
+		addRegions(region)
+// 	}, 10)
 }
 
 function
-addRegion(inRegion)
+addRegions(inRegions)
 {
-	if (gSelectedRegions.has(inRegion.id))
+	//TODO: check against gSelectedRegions
+	let regions = inRegions.filter(r => !gSelectedRegions.has(r))
+	
+	//	Compute derived data…
+	
+	regions.forEach(r =>
 	{
-// 		console.log("Skipping " + inRegion.country + ", already selected")
-		return;
-	}
+		addRegionTag(r.id, 1)
+		computeDailyCases(r)
+		computePerCapita(r)
+		computeDeathsPerCases(r)
 	
-// 	console.log(inRegion);
-	addRegionTag(inRegion.id, 1);
+		//	Keep track of this newly-added region…
 	
-	let confirmed = inRegion.confirmed;
-	let deaths = inRegion.deaths;
-	
-	computeDailyCases(inRegion)
-	computePerCapita(inRegion)
-	computeDeathsPerCases(inRegion)
-	
-	//	Get the max value…
-	
-	let max = Math.max(...confirmed);
-	
-	//	Set dates…
-	
-	let regionDates = inRegion.confirmed.map((e, idx) =>
-	{
-		let d = new Date(2020, 0, 22);
-		d.setDate(d.getDate() + idx);
-		return d;
+		gSelectedRegions.add(r)
 	})
 	
 	//	Load the charts with data…
 	
-	let dates = ["x"].concat(regionDates);
-	loadChart(gChartCases, dates, inRegion, "confirmed")
-	loadChart(gChartCasesPerCapita, dates, inRegion, "perCapitaConfirmed")
-	loadChart(gChartDailyCases, dates, inRegion, "dailyConfirmed")
-	loadChart(gChartDeaths, dates, inRegion, "deaths")
-	loadChart(gChartDeathPercentages, dates, inRegion, "deathsPerCases",
+	let dates = ["x"].concat(gDates)
+	loadChart(gChartCases, dates, regions, "confirmed")
+	loadChart(gChartCasesPerCapita, dates, regions, "perCapitaConfirmed")
+	loadChart(gChartDailyCases, dates, regions, "dailyConfirmed")
+	loadChart(gChartDeaths, dates, regions, "deaths")
+	loadChart(gChartDeathPercentages, dates, regions, "deathsPerCases",
 		function () { 
 			//	Iran has some outlier data and shows up on the top 10 list, so
 			//	suppress it by default in the deaths/cases chart…
@@ -563,30 +563,29 @@ addRegion(inRegion)
 			let iran = getRegionByName("Iran")
 			gChartDeathPercentages.toggle("d" + iran.id, { withLegend: true })
 		})
-	
-	
-	//	Keep track of this newly-added region…
-	
-	gSelectedRegions.add(inRegion.id)
 }
 
 function
-loadChart(inChart, inDates, inRegion, inData, inDone)
+loadChart(inChart, inDates, inRegions, inData, inDone)
 {
+	let regions = inRegions instanceof Array ? inRegions : [inRegions]
+	let columns = [ inDates ].concat(regions.map(r => ["d" + r.id].concat(r[inData])))
+	let names = {}
+	regions.forEach(r => names["d" + r.id] = r.full)
 	inChart.load({
 		x: "x",
-		columns:
-		[
-			inDates,
-			["d" + inRegion.id].concat(inRegion[inData]),
-		],
+		columns: columns,
+// 		[
+// 			inDates,
+// 			["d" + inRegion.id].concat(inRegion[inData]),
+// 		],
 		type: "line",
-		names:
-		{
-			["d" + inRegion.id] : inRegion.full,
-		},
+		names: names,
+// 		{
+// 			["d" + inRegion.id] : inRegion.full,
+// 		},
 		done: inDone
-	});
+	})
 }
 
 function
@@ -596,8 +595,9 @@ addRegionsByFilterID(inFilterID)
 // 	{
 		let filter = gFilters.find(f => f.id == inFilterID)
 		let regions = filter.filter(gRegions)
-		regions.forEach(r => addRegion(r))
-// 	}, 10);
+		addRegions(regions)
+// 		regions.forEach(r => addRegions(r))
+// 	}, 10)
 }
 
 function
@@ -640,7 +640,7 @@ addRegionTag(inRegionID, inChartID)
 			.text(region.full + " (" + region.latestConfirmed + ", " + region.latestDeaths + ")")
 			.append("a")
 				.attr("class", "remove")
-				.attr("onclick", "removeRegion(" + inRegionID + ", " + inChartID + ");")
+				.attr("onclick", "removeRegion(" + inRegionID + ", " + inChartID + ")")
 				.text("×")
 }
 
@@ -672,14 +672,14 @@ removeAllRegionTags()
 function
 chartMax(inMax)
 {
-	let inc;
-	if (inMax < 1000) inc = 100;
-	else if (inMax < 10000) inc = 1000;
-	else if (inMax < 100000) inc = 10000;
-	else if (inMax < 1000000) inc = 100000;
-	else inc = 1000000;
+	let inc
+	if (inMax < 1000) inc = 100
+	else if (inMax < 10000) inc = 1000
+	else if (inMax < 100000) inc = 10000
+	else if (inMax < 1000000) inc = 100000
+	else inc = 1000000
 	
-	return Math.ceil(inMax / inc) * inc;
+	return Math.ceil(inMax / inc) * inc
 }
 
 
