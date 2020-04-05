@@ -59,7 +59,13 @@ span.region a
 	color: gray;
 	font-size: smaller;
 	padding-bottom: 1em;
+	margin-left: 1em;
 	margin-top: 5em;
+}
+
+.footer h3
+{
+	margin-bottom: 0.4em;
 }
 
 .footer p img
@@ -70,6 +76,7 @@ span.region a
 .footer p
 {
 	margin: 0.2em;
+	margin-bottom: 0.5em;
 }
 
 div#tags1

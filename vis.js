@@ -521,7 +521,8 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 						return inYFormat ? d3.format(legendFormat)(inV) : inV
 					}
 			}
-		}
+		},
+		zoom: { enabled: true }
 	}
 	let chart = c3.generate(opts)
 	
