@@ -149,6 +149,13 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 		let state = states[sd.state]
 		if (!state)
 		{
+			let fs = inStatePopulations.find(s => s.state == sd.state)
+			if (!fs)
+			{
+				return
+			}
+			
+			let pop = fs.population
 			state =
 			{
 				state: sd.state,
@@ -158,7 +165,8 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 				deaths: [],
 				firstDate: date,
 				latestConfirmed: sd.positive,
-				latestDeaths: sd.death
+				latestDeaths: sd.death,
+				population: pop
 			}
 			states[sd.state] = state
 		}
@@ -191,12 +199,15 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 	//	Update the states menu…
 	
 	let statesSel = document.getElementById("states")
-	for (let [k, s] of Object.entries(states))
+	if (statesSel)
 	{
-		let opt = document.createElement("option")
-		opt.value = s.state
-		opt.textContent = s.state + " (cases: " + s.latestConfirmed + ", deaths: " + s.latestDeaths + (s.population ? ", pop: " + s.population + ")" : ")")
-		statesSel.appendChild(opt)
+		for (let [k, s] of Object.entries(states))
+		{
+			let opt = document.createElement("option")
+			opt.value = s.state
+			opt.textContent = s.state + " (cases: " + s.latestConfirmed + ", deaths: " + s.latestDeaths + (s.population ? ", pop: " + s.population + ")" : ")")
+			statesSel.appendChild(opt)
+		}
 	}
 	
 	//	Build regions list from confirmed cases…
@@ -654,11 +665,11 @@ addRegions(inRegions)
 	//	Load the charts with data…
 	
 	let dates = ["x"].concat(gDates)
-	loadChart(gChartCases, dates, regions, "confirmed")
-	loadChart(gChartCasesPerCapita, dates, regions, "perCapitaConfirmed")
-	loadChart(gChartDailyCases, dates, regions, "dailyConfirmed")
-	loadChart(gChartDeaths, dates, regions, "deaths")
-	loadChart(gChartDeathPercentages, dates, regions, "deathsPerCases")
+	loadRegionChart(gChartCases, dates, regions, "confirmed")
+	loadRegionChart(gChartCasesPerCapita, dates, regions, "perCapitaConfirmed")
+	loadRegionChart(gChartDailyCases, dates, regions, "dailyConfirmed")
+	loadRegionChart(gChartDeaths, dates, regions, "deaths")
+	loadRegionChart(gChartDeathPercentages, dates, regions, "deathsPerCases")
 }
 
 function
@@ -680,8 +691,8 @@ addStates(inStates)
 	states.forEach(s =>
 	{
 // 		addStateTag(s.state, 1)
-// 		computeDailyCases(s)
-// 		computePerCapita(s)
+		computeDailyCases(s)
+		computePerCapita(s)
 		computeStateDeathsPerCases(s)
 	
 		//	Keep track of this newly-added region…
@@ -691,10 +702,9 @@ addStates(inStates)
 	
 	//	Load the charts with data…
 	
-	let dates = ["x"].concat(gDates)
 	loadStateChart(gChartCases, states, "confirmed")
-// 	loadChart(gChartCasesPerCapita, dates, states, "perCapitaConfirmed")
-// 	loadChart(gChartDailyCases, dates, states, "dailyConfirmed")
+	loadStateChart(gChartCasesPerCapita, states, "perCapitaConfirmed")
+	loadStateChart(gChartDailyCases, states, "dailyConfirmed")
 	loadStateChart(gChartDeaths, states, "deaths")
 	loadStateChart(gChartDeathPercentages, states, "deathsPerCases")
 }
@@ -702,32 +712,37 @@ addStates(inStates)
 
 
 function
-loadChart(inChart, inDates, inRegions, inData, inDone)
+loadRegionChart(inChart, inDates, inRegions, inData, inDone)
 {
 	let regions = inRegions instanceof Array ? inRegions : [inRegions]
-	let columns = [ inDates ].concat(regions.map(r => ["d" + r.id].concat(r[inData])))
+//	let columns = regions.map(r => ["x" + r.id].concat(r["dates"]))
+	let columns = regions.map(r => ["x" + r.id].concat(gDates))
+
+	columns = columns.concat(regions.map(r => ["d" + r.id].concat(r[inData])))
 	let names = {}
-	regions.forEach(r => names["d" + r.id] = r.full)
-	inChart.load({
-		x: "x",
-		columns: columns,
-// 		[
-// 			inDates,
-// 			["d" + inRegion.id].concat(inRegion[inData]),
-// 		],
-		type: "line",
-		names: names,
-// 		{
-// 			["d" + inRegion.id] : inRegion.full,
-// 		},
-		done: inDone
+	let xs = {}
+	regions.forEach(r =>
+	{
+		let id = "d" + r.id
+		names[id] = r.full
+		xs[id] = "x" + r.id
 	})
+	
+	let data = {
+		type: "line",
+		xs: xs,
+		columns: columns,
+		names: names,
+		done: inDone
+	}
+	inChart.load(data)
 }
 
 function
 loadStateChart(inChart, inStates, inData, inDone)
 {
 	let states = inStates instanceof Array ? inStates : [inStates]
+	states = states.filter(s => s[inData])		//	Exclude states that don't have the requested data
 	let columns = states.map(s => ["x" + s.state].concat(s["dates"]))
 	columns = columns.concat(states.map(s => ["d" + s.state].concat(s[inData])))
 	let names = {}
