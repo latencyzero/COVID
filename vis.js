@@ -2,11 +2,12 @@ function
 loadData()
 {
 	let promises = []
-	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"))
-	promises.push(fetchCOVID("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"))
+	promises.push(fetchJHU("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"))
+	promises.push(fetchJHU("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"))
 	promises.push(fetchCountryMap("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"))
-// 	promises.push(fetch("https://ghoapi.azureedge.net/api/DIMENSION/COUNTRY/DimensionValues").then((response) => { return response.json(); }))
 	promises.push(fetchPopulation("https://latencyzero.github.io/COVID/populations.csv"))
+	promises.push(fetchCOVID("https://covidtracking.com/api/v1/states/daily.json"))
+	promises.push(fetchUSStatePopulation("https://latencyzero.github.io/COVID/us-state-populations.csv"))
 	
 	Promise.all(promises).then(
 		function()
@@ -18,12 +19,14 @@ loadData()
 // 			const regions = arguments[0][2]["value"]
 			const countryMap = arguments[0][2]
 			const populations = arguments[0][3]
+			const states = arguments[0][4]
+			const statePopulations = arguments[0][5]
 			
 // 			console.log("Confirmed: " + arguments[0][0].length)
 // 			console.log("Deaths: " + arguments[0][1].length)
 // 			console.log("Recovered: " + arguments[0][2].length)
 
-			processData(confirmed, deaths, countryMap, populations)
+			processData(confirmed, deaths, countryMap, populations, states, statePopulations)
 		},
 		function (err)
 		{
@@ -34,6 +37,12 @@ loadData()
 
 function
 fetchCOVID(inURL)
+{
+	return d3.json(inURL)
+}
+
+function
+fetchJHU(inURL)
 {
 	return d3.csv(inURL,
 					function(d)
@@ -89,27 +98,16 @@ fetchPopulation(inURL)
 					function(d)
 					{
 						let isoCode = d["Country Code"].trim()
-						
-						//	Find the latest population year…
-						
-						let pop = 0
-						let year = 0
-						for (let i = 2020; i >= 1960; --i)
-						{
-							const s = d[i]
-							if (s)
-							{
-								pop = parseInt(s.trim())
-								year = i
-								if (pop)
-								{
-									break
-								}
-							}
-						}
-						const od = { iso3: isoCode, population: pop, year: year }
+						let pop = parseInt(d["population"].trim())
+						const od = { iso3: isoCode, population: pop }
 						return od
 					})
+}
+
+function
+fetchUSStatePopulation(inURL)
+{
+	return d3.csv(inURL)
 }
 
 /**
@@ -129,12 +127,77 @@ fetchPopulation(inURL)
 */
 
 function
-processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
+processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStatePopulations)
 {
 // 	console.log("Confirmed: " + inConfirmed.length)
 // 	console.log(inConfirmed[0])
 // 	console.log("Countries: " + inCountries.length)
 // 	console.log("Populations: " + inPopulations.length)
+	
+	//	Break out states data into individual arrays per state…
+	
+	let states = {};
+	inStates.forEach(sd =>
+	{
+		//	Get the date as a Date…
+		
+		let ds = "" + sd.date
+		let date = new Date(ds.slice(0, 4) + "-" + ds.slice(4, 6) + "-" + ds.slice(6, 8))
+		
+		//	Get the state…
+		
+		let state = states[sd.state]
+		if (!state)
+		{
+			state =
+			{
+				state: sd.state,
+				full: sd.state,
+				dates: [],
+				confirmed: [],
+				deaths: [],
+				firstDate: date,
+				latestConfirmed: sd.positive,
+				latestDeaths: sd.death
+			}
+			states[sd.state] = state
+		}
+		
+		//	Update the earliest date…
+		
+		if (date < state.firstDate)
+		{
+			state.firstDate = date
+			
+		}
+		
+		//	Push the current data onto the front of the dates array…
+		
+		state.dates.unshift(date)
+		state.confirmed.unshift(sd.positive || 0)
+		state.deaths.unshift(sd.death || 0)
+	})
+	
+	gStates = states
+// 	for (let [k, s] of Object.entries(states))
+// 	{
+// 		console.log(s.state + ": " + s.confirmed.length + ", " + s.firstDate)
+// 		s.confirmed.forEach(c =>
+// 		{
+// 			console.log("  " + c.date + ": " + c.count)
+// 		})
+// 	}
+	
+	//	Update the states menu…
+	
+	let statesSel = document.getElementById("states")
+	for (let [k, s] of Object.entries(states))
+	{
+		let opt = document.createElement("option")
+		opt.value = s.state
+		opt.textContent = s.state + " (cases: " + s.latestConfirmed + ", deaths: " + s.latestDeaths + (s.population ? ", pop: " + s.population + ")" : ")")
+		statesSel.appendChild(opt)
+	}
 	
 	//	Build regions list from confirmed cases…
 	
@@ -345,6 +408,13 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		gChartDeathPercentages,
 	]
 	
+// 	setupDateSlider()
+// 	loadDefaultData()
+}
+
+function
+loadDefaultData()
+{
 	//	Load some default data, after a delay to let
 	//	the charts show up…
 	
@@ -359,8 +429,11 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 		gChartDeathPercentages.toggle("d" + iran.id)
 	 }, 10)
 	
-	//	Set up the minimum date slider…
-	
+}
+
+function
+setupDateSlider()
+{
 	let minMinDate = new Date(2020, 0, 22)
 	let maxMinDate = new Date()
 	var slider = d3
@@ -394,6 +467,9 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations)
 var gRegions
 var gFilters
 var gSelectedRegions = new Set()
+
+var gStates
+var gSelectedStates = new Set()
 
 var	gDates = []
 
@@ -473,6 +549,24 @@ computeDeathsPerCases(ioRegion)
 }
 
 function
+computeStateDeathsPerCases(ioState)
+{
+	if (ioState.deathsPerCases)
+	{
+		return
+	}
+	
+	let deaths = []
+	ioState.deaths.forEach(
+		(d, i) =>
+		{
+			deaths.push(d / ioState.confirmed[i])
+		})
+	
+	ioState.deathsPerCases = deaths
+}
+
+function
 getRegionByID(inID)
 {
 	return gRegions[inID]
@@ -492,7 +586,7 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 		bindto: "#" + inElementID,
 		data:
 		{
-			x: "x",
+// 			x: "x",
 			columns: [],
 			empty: { label : { text: "Loading…" } },
 		},
@@ -532,11 +626,8 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 function
 addRegionByID(inRegionID)
 {
-// 	setTimeout(function()
-// 	{
-		let region = getRegionByID(inRegionID)
-		addRegions(region)
-// 	}, 10)
+	let region = getRegionByID(inRegionID)
+	addRegions(region)
 }
 
 function
@@ -571,6 +662,46 @@ addRegions(inRegions)
 }
 
 function
+addStateByID(inStateID)
+{
+	let state = gStates[inStateID]
+	addStates(state)
+}
+
+function
+addStates(inStates)
+{
+	let states = inStates instanceof Array ? inStates : [inStates]
+	//TODO: check against gSelectedRegions
+	states = states.filter(r => !gSelectedRegions.has(r))
+	
+	//	Compute derived data…
+	
+	states.forEach(s =>
+	{
+// 		addStateTag(s.state, 1)
+// 		computeDailyCases(s)
+// 		computePerCapita(s)
+		computeStateDeathsPerCases(s)
+	
+		//	Keep track of this newly-added region…
+	
+		gSelectedStates.add(s)
+	})
+	
+	//	Load the charts with data…
+	
+	let dates = ["x"].concat(gDates)
+	loadStateChart(gChartCases, states, "confirmed")
+// 	loadChart(gChartCasesPerCapita, dates, states, "perCapitaConfirmed")
+// 	loadChart(gChartDailyCases, dates, states, "dailyConfirmed")
+	loadStateChart(gChartDeaths, states, "deaths")
+	loadStateChart(gChartDeathPercentages, states, "deathsPerCases")
+}
+
+
+
+function
 loadChart(inChart, inDates, inRegions, inData, inDone)
 {
 	let regions = inRegions instanceof Array ? inRegions : [inRegions]
@@ -591,6 +722,31 @@ loadChart(inChart, inDates, inRegions, inData, inDone)
 // 		},
 		done: inDone
 	})
+}
+
+function
+loadStateChart(inChart, inStates, inData, inDone)
+{
+	let states = inStates instanceof Array ? inStates : [inStates]
+	let columns = states.map(s => ["x" + s.state].concat(s["dates"]))
+	columns = columns.concat(states.map(s => ["d" + s.state].concat(s[inData])))
+	let names = {}
+	let xs = {}
+	states.forEach(s =>
+	{
+		let id = "d" + s.state
+		names[id] = s.state
+		xs[id] = "x" + s.state
+	})
+	
+	let data = {
+		type: "line",
+		xs: xs,
+		columns: columns,
+		names: names,
+		done: inDone
+	}
+	inChart.load(data)
 }
 
 function
