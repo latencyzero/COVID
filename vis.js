@@ -5,7 +5,7 @@ loadData()
 	promises.push(fetchJHU("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"))
 	promises.push(fetchJHU("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"))
 	promises.push(fetchCountryMap("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"))
-	promises.push(fetchPopulation("https://latencyzero.github.io/COVID/populations.csv"))
+	promises.push(fetchWorldPopulation("https://latencyzero.github.io/COVID/populations.csv"))
 	promises.push(fetchCOVID("https://covidtracking.com/api/v1/states/daily.json"))
 	promises.push(fetchUSStatePopulation("https://latencyzero.github.io/COVID/us-state-populations.csv"))
 	
@@ -92,7 +92,7 @@ fetchCountryMap(inURL)
 }
 
 function
-fetchPopulation(inURL)
+fetchWorldPopulation(inURL)
 {
 	return d3.csv(inURL,
 					function(d)
