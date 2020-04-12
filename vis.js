@@ -599,7 +599,7 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 		{
 // 			x: "x",
 			columns: [],
-			empty: { label : { text: "Loading…" } },
+			empty: { label : { text: "No Data to Display" } },
 		},
 		axis:
 		{
@@ -645,8 +645,7 @@ function
 addRegions(inRegions)
 {
 	let regions = inRegions instanceof Array ? inRegions : [inRegions]
-	//TODO: check against gSelectedRegions
-	regions = regions.filter(r => !gSelectedRegions.has(r))
+	regions = regions.filter(r => !gSelectedRegions.has(r))			//	Ignore any already selected
 	
 	//	Compute derived data…
 	
@@ -670,6 +669,10 @@ addRegions(inRegions)
 	loadRegionChart(gChartDailyCases, dates, regions, "dailyConfirmed")
 	loadRegionChart(gChartDeaths, dates, regions, "deaths")
 	loadRegionChart(gChartDeathPercentages, dates, regions, "deathsPerCases")
+	
+	//	Clear the menu selection…
+	
+	setTimeout(function() { d3.select("#regions").node().selectedIndex = 0 }, 500)
 }
 
 function
@@ -683,21 +686,20 @@ function
 addStates(inStates)
 {
 	let states = inStates instanceof Array ? inStates : [inStates]
-	//TODO: check against gSelectedRegions
-	states = states.filter(r => !gSelectedRegions.has(r))
+	states = states.filter(s => !gSelectedRegions.has(s))			//	Ignore any already selected
 	
 	//	Compute derived data…
 	
 	states.forEach(s =>
 	{
-// 		addStateTag(s.state, 1)
+		addStateTag(s.state, 1)
 		computeDailyCases(s)
 		computePerCapita(s)
 		computeStateDeathsPerCases(s)
 	
 		//	Keep track of this newly-added region…
 	
-		gSelectedStates.add(s)
+		gSelectedRegions.add(s)
 	})
 	
 	//	Load the charts with data…
@@ -707,6 +709,10 @@ addStates(inStates)
 	loadStateChart(gChartDailyCases, states, "dailyConfirmed")
 	loadStateChart(gChartDeaths, states, "deaths")
 	loadStateChart(gChartDeathPercentages, states, "deathsPerCases")
+	
+	//	Clear the menu selection…
+	
+	setTimeout(function() { d3.select("#states").node().selectedIndex = 0 }, 500)
 }
 
 
@@ -767,13 +773,9 @@ loadStateChart(inChart, inStates, inData, inDone)
 function
 addRegionsByFilterID(inFilterID)
 {
-// 	setTimeout(function()
-// 	{
-		let filter = gFilters.find(f => f.id == inFilterID)
-		let regions = filter.filter(gRegions)
-		addRegions(regions)
-// 		regions.forEach(r => addRegions(r))
-// 	}, 10)
+	let filter = gFilters.find(f => f.id == inFilterID)
+	let regions = filter.filter(gRegions)
+	addRegions(regions)
 }
 
 function
@@ -782,12 +784,15 @@ addSeriesToChart(inChart)
 }
 
 function
-removeAllRegions()
+clearAll()
 {
 	gAllCharts.forEach(c => c.unload())
 	
 	gSelectedRegions.clear()
-	removeAllRegionTags()
+	removeAllTags()
+	
+	d3.select("#regions").node().selectedIndex = 0
+	d3.select("#states").node().selectedIndex = 0
 }
 
 function
@@ -799,6 +804,17 @@ removeRegion(inRegionID, inChartID)
 	gAllCharts.forEach(c => c.unload({ ids: ["d" + region.id] }))
 	
 	gSelectedRegions.delete(inRegionID)
+}
+
+function
+removeState(inStateID, inChartID)
+{
+	removeRegionTag(inStateID, inChartID)
+	
+	let state = gStates[inStateID]
+	gAllCharts.forEach(c => c.unload({ ids: ["d" + state.state] }))
+	
+	gSelectedRegions.delete(inStateID)
 }
 
 /**
@@ -813,10 +829,25 @@ addRegionTag(inRegionID, inChartID)
 		.append("span")
 			.attr("class", "region")
 			.attr("id", "region" + inRegionID)
-			.text(region.full + " (" + region.latestConfirmed + ", " + region.latestDeaths + ")")
+			.text(region.full)
 			.append("a")
 				.attr("class", "remove")
 				.attr("onclick", "removeRegion(" + inRegionID + ", " + inChartID + ")")
+				.text("×")
+}
+
+function
+addStateTag(inStateID, inChartID)
+{
+	let state = gStates[inStateID]
+	d3.select("#tags" + inChartID)
+		.append("span")
+			.attr("class", "region")
+			.attr("id", "region" + inStateID)
+			.text(state.full)
+			.append("a")
+				.attr("class", "remove")
+				.attr("onclick", "removeState(\"" + inStateID + "\", " + inChartID + ")")
 				.text("×")
 }
 
@@ -833,7 +864,7 @@ removeRegionTag(inRegionID, inChartID)
 }
 
 function
-removeAllRegionTags()
+removeAllTags()
 {
 	d3.select("#tags1")
 		.selectAll("*")
