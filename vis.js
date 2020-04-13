@@ -455,6 +455,19 @@ populateFilters()
 		}
 	})
 	
+	//	Canadian Provinces…
+
+	filters.push({
+		name: "Top 5 Canadian Provinces",
+		id: 5,
+		filter: function()
+		{
+			let results = gRegions.filter(r => r.country == "Canada" && r.state && r.state != "Recovered" && r.state != "Diamond Princess" && r.state != "Grand Princess")
+			results = results.sort((a, b) => b.latestDeaths - a.latestDeaths).slice(0, 5)
+			addRegions(results)
+		}
+	})
+	
 	//	Set up the menu…
 	
 	gFilters = filters
@@ -771,7 +784,7 @@ loadRegionChart(inChart, inDates, inRegions, inData, inDone)
 	regions.forEach(r =>
 	{
 		let id = "d" + r.id
-		names[id] = r.full
+		names[id] = r.state || r.country
 		xs[id] = "x" + r.id
 	})
 	
