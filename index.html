@@ -54,8 +54,8 @@
 	</select>
 
 	<label for="filters">Filters:</label>
-	<select id="filters" onchange="addRegionsByFilterID(this.options[this.selectedIndex].value)">
-		<option>-- Add Regions by Filter --</option>
+	<select id="filters" onchange="addByFilterID(this.options[this.selectedIndex].value)">
+		<option>-- Add by Filter --</option>
 	</select>
 
 	<button onclick="clearAll()">Clear All</button>

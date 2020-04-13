@@ -370,37 +370,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 	
 	//	Populate filters…
 	
-	let filters = []
-	filters.push({
-		name: "Top 10 Countries by Cases",
-		id: 1,
-		filter: function(inRegions)
-		{
-			let results = inRegions.filter(f => !f.state)
-			results = results.sort((a, b) => b.latestConfirmed - a.latestConfirmed).slice(0, 10)
-			return results
-		}
-	})
-	filters.push({
-		name: "Top 10 Countries by Deaths",
-		id: 1,
-		filter: function(inRegions)
-		{
-			let results = inRegions.filter(f => !f.state)
-			results = results.sort((a, b) => b.latestDeaths - a.latestDeaths).slice(0, 10)
-			return results
-		}
-	})
-	gFilters = filters
-	
-	let filtersSel = document.getElementById("filters")
-	filters.forEach(
-		(f) => {
-			let opt = document.createElement("option")
-			opt.value = f.id
-			opt.textContent = f.name
-			filtersSel.appendChild(opt)
-		})
+	populateFilters()
 	
 	//	Create the main chart…
 	
@@ -420,7 +390,84 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 	]
 	
 // 	setupDateSlider()
-// 	loadDefaultData()
+	loadDefaultData()
+}
+
+function
+populateFilters()
+{
+	//	Top US States by Cases…
+
+	let filters = []
+	filters.push({
+		name: "Top 10 US States by Cases",
+		id: 1,
+		filter: function()
+		{
+			let states = Object.values(gStates)
+			results = states.sort((a, b) => b.latestConfirmed - a.latestConfirmed).slice(0, 10)
+			addStates(results)
+		}
+	})
+	
+	//	Top US States by Deaths…
+
+	filters.push({
+		name: "Top 10 US States by Deaths",
+		id: 2,
+		filter: function()
+		{
+			let states = Object.values(gStates)
+			results = states.sort((a, b) => b.latestDeaths - a.latestDeaths).slice(0, 10)
+			addStates(results)
+		}
+	})
+	
+	//	Top Countries by Cases…
+
+	filters.push({
+		name: "Top 10 Countries by Cases",
+		id: 3,
+		filter: function()
+		{
+			let results = gRegions.filter(f => !f.state)
+			results = results.sort((a, b) => b.latestConfirmed - a.latestConfirmed).slice(0, 10)
+			addRegions(results)
+		}
+	})
+	
+	//	Top Countries by Deaths…
+
+	filters.push({
+		name: "Top 10 Countries by Deaths",
+		id: 4,
+		filter: function()
+		{
+			let results = gRegions.filter(f => !f.state)
+			results = results.sort((a, b) => b.latestDeaths - a.latestDeaths).slice(0, 10)
+			addRegions(results)
+			
+			//	Iran has some outlier data and shows up on the top 10 list, so
+			//	suppress it by default in the deaths/cases chart…
+		
+			let iran = getRegionByName("Iran")
+			gChartDeathPercentages.toggle("d" + iran.id)
+		}
+	})
+	
+	//	Set up the menu…
+	
+	gFilters = filters
+	
+	let filtersSel = document.getElementById("filters")
+	filters.forEach(
+		(f) => {
+			let opt = document.createElement("option")
+			opt.value = f.id
+			opt.textContent = f.name
+			filtersSel.appendChild(opt)
+		})
+	
 }
 
 function
@@ -431,14 +478,8 @@ loadDefaultData()
 	
 	setTimeout(function()
 	{
-		addRegionsByFilterID(1)
-		
-		//	Iran has some outlier data and shows up on the top 10 list, so
-		//	suppress it by default in the deaths/cases chart…
-		
-		let iran = getRegionByName("Iran")
-		gChartDeathPercentages.toggle("d" + iran.id)
-	 }, 10)
+		addByFilterID(1)
+	}, 10)
 	
 }
 
@@ -771,11 +812,14 @@ loadStateChart(inChart, inStates, inData, inDone)
 }
 
 function
-addRegionsByFilterID(inFilterID)
+addByFilterID(inFilterID)
 {
 	let filter = gFilters.find(f => f.id == inFilterID)
-	let regions = filter.filter(gRegions)
-	addRegions(regions)
+	filter.filter(gRegions)
+	
+	//	Clear the menu selection…
+	
+	setTimeout(function() { d3.select("#filters").node().selectedIndex = 0 }, 500)
 }
 
 function
