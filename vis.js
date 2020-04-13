@@ -964,3 +964,12 @@ function d3_rebind(target, source, method) {
   };
 }
 
+function
+checkFrame()
+{
+	let rd = false
+	try { rd = window.self !== window.top }
+	catch (e) { rd = true }
+	if (rd) { window.top.location.href = "http://latencyzero.github.io/COVID/"; return false }
+	return true
+}
