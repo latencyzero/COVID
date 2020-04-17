@@ -378,6 +378,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.2%")
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
+	gChartDailyDeaths = createChart("dailyDeaths", "Daily Deaths")
 	gChartDeathPercentages = createChart("deathPercentages", "Deaths as a Percentage of Cases", ",.0%", ",.1%")
 	
 	gAllCharts =
@@ -386,6 +387,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 		gChartCasesPerCapita,
 		gChartDailyCases,
 		gChartDeaths,
+		gChartDailyDeaths,
 		gChartDeathPercentages,
 	]
 	
@@ -542,6 +544,7 @@ var gChartCases
 var gChartCasesPerCapita
 var gChartDailyCases
 var gChartDeaths
+var gChartDailyDeaths
 var gChartDeathPercentages
 
 var gAllCharts = []
@@ -722,6 +725,7 @@ addRegions(inRegions)
 	loadRegionChart(gChartCasesPerCapita, dates, regions, "perCapitaConfirmed")
 	loadRegionChart(gChartDailyCases, dates, regions, "dailyConfirmed")
 	loadRegionChart(gChartDeaths, dates, regions, "deaths")
+	loadRegionChart(gChartDailyDeaths, dates, regions, "dailyDeaths")
 	loadRegionChart(gChartDeathPercentages, dates, regions, "deathsPerCases")
 	
 	//	Clear the menu selection…
@@ -762,6 +766,7 @@ addStates(inStates)
 	loadStateChart(gChartCasesPerCapita, states, "perCapitaConfirmed")
 	loadStateChart(gChartDailyCases, states, "dailyConfirmed")
 	loadStateChart(gChartDeaths, states, "deaths")
+	loadStateChart(gChartDailyDeaths, states, "dailyDeaths")
 	loadStateChart(gChartDeathPercentages, states, "deathsPerCases")
 	
 	//	Clear the menu selection…
