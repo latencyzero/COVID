@@ -6,7 +6,7 @@ loadData()
 	promises.push(fetchJHU("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"))
 	promises.push(fetchCountryMap("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"))
 	promises.push(fetchWorldPopulation("https://latencyzero.github.io/COVID/populations.csv"))
-	promises.push(fetchCOVID("https://covidtracking.com/api/v1/states/daily.json"))
+	promises.push(fetchCOVID("https://api.covidtracking.com/v1/states/daily.json"))
 	promises.push(fetchUSStatePopulation("https://latencyzero.github.io/COVID/us-state-populations.csv"))
 	
 	Promise.all(promises).then(
