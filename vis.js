@@ -374,10 +374,12 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 	
 	populateFilters()
 	
-	// createCharts()
-
 // 	setupDateSlider()
 	loadDefaultData()
+	
+	//	Hide the loading message…
+	
+	document.getElementById("activity").style.display = "none"
 }
 
 function
@@ -672,7 +674,7 @@ createChart(inElementID, inYAxisLabel, inYFormat, inLegendDataFormat)
 		{
 // 			x: "x",
 			columns: [],
-			empty: { label : { text: "No Data to Display (or it’s loading…)" } },
+			empty: { label : { text: "No Data to Display" } },
 		},
 		axis:
 		{
