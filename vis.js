@@ -376,6 +376,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 	
 	gChartCases = createChart("cases", "Cases")
 	gChartCasesPerCapita = createChart("casesPerCapita", "Cases per Capita", ",.2%")
+	gChartDailyCasesPerCapita = createChart("dailyCasesPerCapita", "Daily Cases per Capita", ",.2%")
 	gChartDailyCases = createChart("dailyCases", "New Cases per Day")
 	gChartDeaths = createChart("deaths", "Deaths")
 	gChartDailyDeaths = createChart("dailyDeaths", "Daily Deaths")
@@ -386,6 +387,7 @@ processData(inConfirmed, inDeaths, inCountryMap, inPopulations, inStates, inStat
 		gChartCases,
 		gChartCasesPerCapita,
 		gChartDailyCases,
+		gChartDailyCasesPerCapita,
 		gChartDeaths,
 		gChartDailyDeaths,
 		gChartDeathPercentages,
@@ -556,24 +558,29 @@ var gAllCharts = []
 function
 computeDailyCases(ioRegion)
 {
-	if (ioRegion.dailyConfirmed && ioRegion.dailyDeaths)
+	//	Skip if we've already done this for this region…
+	
+	if (ioRegion.dailyConfirmed && ioRegion.dailyDeaths && ioRegion.dailyCasesPerCapita)
 	{
 		return
 	}
 	
 	let dailyCases = []
+	let dailyCasesPerCapita = []
 	let dailyDeaths = []
 	let lastCases = 0
 	let lastDeaths = 0
 	ioRegion.confirmed.forEach((c, i) =>
 	{
 		dailyCases.push(ioRegion.confirmed[i] - lastCases)
+		dailyCasesPerCapita.push((ioRegion.confirmed[i] - lastCases) / ioRegion.population)
 		dailyDeaths.push(ioRegion.deaths[i] - lastDeaths)
 		
 		lastCases = ioRegion.confirmed[i]
 		lastDeaths = ioRegion.deaths[i]
 	})
 	
+	ioRegion.dailyCasesPerCapita = dailyCasesPerCapita
 	ioRegion.dailyConfirmed = dailyCases
 	ioRegion.dailyDeaths = dailyDeaths
 }
@@ -586,12 +593,10 @@ computePerCapita(ioRegion)
 		return
 	}
 	
-	let dailyCases = []
 	let cases = []
 	let deaths = []
 	ioRegion.confirmed.forEach((c, i) =>
 	{
-		dailyCases.push(ioRegion.confirmed[i] / ioRegion.population)
 		cases.push(ioRegion.confirmed[i] / ioRegion.population)
 		deaths.push(ioRegion.deaths[i] / ioRegion.population)
 	})
@@ -747,6 +752,7 @@ addRegions(inRegions)
 	//	Load the charts with data…
 	
 	let dates = ["x"].concat(gDates)
+	loadRegionChart(gChartDailyCasesPerCapita, dates, regions, "dailyCasesPerCapita")
 	loadRegionChart(gChartCases, dates, regions, "confirmed")
 	loadRegionChart(gChartCasesPerCapita, dates, regions, "perCapitaConfirmed")
 	loadRegionChart(gChartDailyCases, dates, regions, "dailyConfirmed")
@@ -788,6 +794,7 @@ addStates(inStates)
 	
 	//	Load the charts with data…
 	
+	loadStateChart(gChartDailyCasesPerCapita, states, "dailyCasesPerCapita")
 	loadStateChart(gChartCases, states, "confirmed")
 	loadStateChart(gChartCasesPerCapita, states, "perCapitaConfirmed")
 	loadStateChart(gChartDailyCases, states, "dailyConfirmed")
